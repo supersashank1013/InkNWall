@@ -1,0 +1,128 @@
+import { useState } from "react";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { toast } from "react-hot-toast";
+import CompleteProfileModal from "./CompleteProfileModal";
+
+interface AuthModalProps {
+  onClose?: () => void;
+  onProfileIncomplete?: () => void;
+}
+
+export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalProps) {
+  const [message, setMessage] = useState("");
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111] p-6 text-white shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold">Sign in</h2>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="cursor-pointer text-3xl text-gray-500 transition-all duration-300 hover:rotate-90 hover:text-white"
+              aria-label="Close sign in"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+
+        <p className="mb-4 text-sm text-gray-400">
+          Continue with your IITM Google account to place orders.
+        </p>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (res: CredentialResponse) => {
+              try {
+                const token = res.credential!;
+                const userData = JSON.parse(atob(token.split(".")[1]));
+
+                const email = userData.email;
+
+                if (!email.endsWith("@smail.iitm.ac.in")) {
+                  toast.error("Only IITM students allowed");
+                  return;
+                }
+
+                const payload = {
+                  name: userData.name,
+                  email: userData.email,
+                  roll: email.split("@")[0].toLowerCase(),
+                  profilePic: userData.picture
+                };
+
+                console.log("Sending to backend:", payload);
+
+                const response = await fetch("http://localhost:8080/api/users/google-login", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                  throw new Error("Backend failed");
+                }
+
+                const data = await response.json();
+                console.log("BACKEND RESPONSE:", data);
+
+                // 🔥 STORE TOKEN (MOST IMPORTANT)
+                localStorage.setItem("token", data.token);
+
+                // 🔥 EXTRACT USER PROPERLY
+                const normalizedUser = {
+                  id: data.user.id, // ⭐ NOW EXISTS
+                  name: data.user.name,
+                  email: data.user.email,
+                  roll: data.user.roll?.toLowerCase?.() ?? payload.roll,
+                  profilePic: data.user.profilePic || payload.profilePic || "",
+                  hostel: data.user.hostel,
+                  phone: data.user.phone,
+                };
+
+                localStorage.setItem("user", JSON.stringify(normalizedUser));
+
+                if (!normalizedUser.hostel || !normalizedUser.phone) {
+                  setUser(normalizedUser);
+                  setShowCompleteProfile(true);
+                  onProfileIncomplete?.();
+                } else {
+                  toast.success("Login success");
+                  window.location.reload();
+                }
+
+              } catch (err) {
+                console.error(err);
+                toast.error("Unable to sign in right now");
+              }
+            }}
+            onError={() => {
+              setMessage("Google sign-in failed. Please try again.");
+              toast.error("Google sign-in failed. Please try again.");
+            }}
+          />
+        </div>
+
+        {message && (
+          <p className="mt-4 text-center text-sm text-orange-400">{message}</p>
+        )}
+      </div>
+
+      {showCompleteProfile && user && (
+        <CompleteProfileModal
+          user={user}
+          onDone={() => {
+            setShowCompleteProfile(false);
+            window.location.reload();
+          }}
+        />
+      )}
+    </div>
+  );
+}

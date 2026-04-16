@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+.clip-triangle {
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+body {
+  background-color: #080808;
+  color: #ffffff;
+  font-family: Inter, sans-serif;
+}
+
+@keyframes profile-fluid-morph-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 42px, 0) scale(0.94);
+    filter: blur(18px);
+    border-radius: 48px;
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.01);
+    filter: blur(0);
+    border-radius: 36px;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+    border-radius: 34px;
+  }
+}
+
+@keyframes profile-section-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes profile-orb-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -20px, 0) scale(1.08);
+  }
+}
+
+.profile-fluid-enter {
+  animation: profile-fluid-morph-in 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+}
+
+.profile-section-reveal {
+  opacity: 0;
+  animation: profile-section-rise 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    linear-gradient(135deg, rgba(255, 95, 31, 0.08), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+}
+
+.profile-glass-soft {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(8, 8, 8, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+
+.profile-float-orb {
+  animation: profile-orb-float 14s ease-in-out infinite;
+}
+/* Custom Scrollbar for Webkit (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Makes it nice and thin */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Hides the ugly white track block */
+  margin-block: 10px; /* Adds a little padding at the top and bottom */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #2a2a2a; /* A subtle dark gray that blends in */
+  border-radius: 20px; /* Soft rounded edges */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #ea580c; /* Turns InkNWall orange when hovered! */
+}
+
+/* Custom Scrollbar for Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+
+.input {
+  @apply w-full p-3 bg-black border border-white/10 rounded-lg 
+  focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition;
+}
