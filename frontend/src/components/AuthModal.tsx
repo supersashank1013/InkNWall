@@ -2,16 +2,33 @@ import { useState } from "react";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { toast } from "react-hot-toast";
 import CompleteProfileModal from "./CompleteProfileModal";
+import { apiUrl } from "../lib/api";
 
 interface AuthModalProps {
   onClose?: () => void;
   onProfileIncomplete?: () => void;
 }
 
+interface GoogleJwtPayload {
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+interface AuthUser {
+  id: number | string;
+  name?: string;
+  email?: string;
+  roll?: string;
+  profilePic?: string;
+  hostel?: string;
+  phone?: string;
+}
+
 export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalProps) {
   const [message, setMessage] = useState("");
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4">
@@ -39,7 +56,7 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
             onSuccess={async (res: CredentialResponse) => {
               try {
                 const token = res.credential!;
-                const userData = JSON.parse(atob(token.split(".")[1]));
+                const userData = JSON.parse(atob(token.split(".")[1])) as GoogleJwtPayload;
 
                 const email = userData.email;
 
@@ -55,9 +72,7 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
                   profilePic: userData.picture
                 };
 
-                console.log("Sending to backend:", payload);
-
-                const response = await fetch("http://localhost:8080/api/users/google-login", {
+                const response = await fetch(apiUrl("/api/users/google-login"), {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json"
@@ -70,7 +85,6 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
                 }
 
                 const data = await response.json();
-                console.log("BACKEND RESPONSE:", data);
 
                 // 🔥 STORE TOKEN (MOST IMPORTANT)
                 localStorage.setItem("token", data.token);

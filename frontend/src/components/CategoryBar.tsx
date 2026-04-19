@@ -41,7 +41,7 @@ export default function CategoryBar({
             <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#0b0b0b] to-transparent md:hidden" />
             <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#0b0b0b] to-transparent md:hidden" />
 
-            <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-1 py-1 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
+            <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-1 py-1.5 scroll-smooth sm:gap-2">
               {categoryOptions.map((category) => (
                 <button
                   key={category.label}

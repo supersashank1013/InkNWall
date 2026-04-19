@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
+import { apiUrl } from "../lib/api";
 
 interface CheckoutItem {
   id: number;
@@ -87,7 +88,7 @@ export default function Checkout() {
         })),
       };
 
-      const res = await fetch("http://localhost:8080/api/orders", {
+      const res = await fetch(apiUrl("/api/orders"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

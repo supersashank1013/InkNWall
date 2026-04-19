@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
+import { apiUrl } from "../lib/api";
 
 type OrderStatus = "PENDING" | "RECEIVED" | "COLLECTED";
 type OrderFilter = "PLACED" | "COLLECTED";
@@ -139,7 +140,7 @@ export default function Profile() {
     let cancelled = false;
 
     const fetchOrders = () => {
-      fetch("http://localhost:8080/api/orders/my", {
+      fetch(apiUrl("/api/orders/my"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -240,10 +241,9 @@ export default function Profile() {
     // ⭐ upload only if new file selected
     if (selectedFile) {
       imageUrl = await uploadToCloudinary(selectedFile);
-      console.log("Uploaded URL:", imageUrl);
     }
 
-    const res = await fetch(`http://localhost:8080/api/users/${user.id}`, {
+    const res = await fetch(apiUrl(`/api/users/${user.id}`), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -384,7 +384,7 @@ export default function Profile() {
                 </div>
 
                 <p className="max-w-xl text-sm leading-7 text-gray-300">
-                  Keep your pickup details ready, track your order flow, and manage your account inside this glassy profile hub.
+                  Keep your pickup details ready, track your order flow, and manage your account.
                 </p>
               </div>
             </div>
@@ -412,10 +412,13 @@ export default function Profile() {
               </div>
 
               <div className="profile-glass-soft rounded-[24px] p-4 sm:p-5 md:col-span-2">
-                <label className="text-xs uppercase tracking-[0.18em] text-gray-400">Hostel & Room</label>
+                <label className="text-xs uppercase tracking-[0.18em] text-gray-400" >
+                  Address
+                </label>
                 <input
                   value={hostel}
                   onChange={(e) => setHostel(e.target.value)}
+                  placeholder="Hostel, Room No"
                   className="input mt-3 border-white/10 bg-white/[0.04] text-white shadow-inner shadow-black/10"
                 />
               </div>
@@ -464,7 +467,7 @@ export default function Profile() {
                   </p>
                   <h2 className="mt-2 text-xl font-bold text-white sm:text-2xl">Your Orders</h2>
                   <p className="mt-1 text-sm text-gray-300">
-                    View your placed and collected orders, with 5 orders on each page.
+                    View your placed and collected orders.
                   </p>
                 </div>
 
@@ -551,9 +554,9 @@ export default function Profile() {
 
                             <span>
                               {order.status === "PENDING"
-                                ? "Pending admin confirmation"
+                                ? "Confirmation pending"
                                 : order.status === "RECEIVED"
-                                  ? "Confirmed by admin"
+                                  ? "Order Confirmed"
                                   : "Order collected"}
                             </span>
                           </div>

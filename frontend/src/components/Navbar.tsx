@@ -16,6 +16,11 @@ interface NavbarProps {
   toggleCart: () => void;
 }
 
+interface NavUser {
+  name?: string;
+  profilePic?: string;
+}
+
 export default function Navbar({
   search,
   setSearch,
@@ -24,9 +29,9 @@ export default function Navbar({
 }: NavbarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [user, setUser] = useState<any>(() => {
+  const [user, setUser] = useState<NavUser | null>(() => {
     const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
+    return stored ? (JSON.parse(stored) as NavUser) : null;
   });
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -49,7 +54,7 @@ export default function Navbar({
   useEffect(() => {
     const syncUser = () => {
       const stored = localStorage.getItem("user");
-      setUser(stored ? JSON.parse(stored) : null);
+      setUser(stored ? (JSON.parse(stored) as NavUser) : null);
     };
 
     window.addEventListener("storage", syncUser);
@@ -459,19 +464,13 @@ export default function Navbar({
                   <>
                     <button
                       onClick={() => setIsAuthOpen(true)}
-                      className="inline-flex justify-center rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-gray-200 transition hover:border-white/25 hover:bg-white/5 md:hidden"
-                    >
-                      Account
-                    </button>
-                    <button
-                      onClick={() => setIsAuthOpen(true)}
-                      className="hidden justify-center rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-white/25 hover:bg-white/5 md:inline-flex"
+                      className="inline-flex justify-center rounded-full border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-gray-200 transition hover:border-white/25 hover:bg-white/5 sm:px-3 sm:py-2 sm:text-xs md:px-4 md:text-sm"
                     >
                       Login
                     </button>
                     <button
                       onClick={() => setIsAuthOpen(true)}
-                      className="hidden justify-center rounded-full bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500 md:inline-flex"
+                      className="inline-flex justify-center rounded-full bg-orange-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-orange-500 sm:px-3 sm:py-2 sm:text-xs md:px-4 md:text-sm"
                     >
                       Sign Up
                     </button>
@@ -534,7 +533,7 @@ export default function Navbar({
         <AuthModal
           onClose={() => {
             const stored = localStorage.getItem("user");
-            setUser(stored ? JSON.parse(stored) : null);
+            setUser(stored ? (JSON.parse(stored) as NavUser) : null);
             setIsAuthOpen(false);
           }}
         />

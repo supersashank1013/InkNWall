@@ -20,6 +20,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import AnnouncementBar from "./components/AnnouncementBar";
+import { apiUrl } from "./lib/api";
 
 export interface CartItem extends Poster {
   quantity: number;
@@ -72,17 +73,15 @@ function HomePage() {
     }
   });
 
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(() => Boolean(fromLocation?.openCart));
   const [modalImg, setModalImg] = useState<string | null>(null);
   const [posters, setPosters] = useState<Poster[]>([]);
+  const [highlightedPoster, setHighlightedPoster] = useState<{ id: number; nonce: number } | null>(null);
   const shopRef = useRef<HTMLElement | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (fromLocation?.openCart) {
-      setIsCartOpen(true);
-
-      // reset state flag so a browser refresh does not auto-open cart
       navigate(location.pathname, {
         replace: true,
         state: {
@@ -94,7 +93,7 @@ function HomePage() {
   }, [fromLocation?.openCart, location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/posters")
+    fetch(apiUrl("/api/posters"))
       .then((res) => res.json())
       .then(
         (
@@ -156,11 +155,10 @@ function HomePage() {
     const matchedPoster = posters.find((poster) => poster.id === posterId);
     if (!matchedPoster) return;
 
-    setCategory("ALL");
-    setSearch(matchedPoster.name);
-    setModalImg(matchedPoster.img);
-
     window.requestAnimationFrame(() => {
+      setCategory("ALL");
+      setSearch(matchedPoster.name);
+      setModalImg(matchedPoster.img);
       shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [location.search, posters]);
@@ -202,6 +200,16 @@ function HomePage() {
     toast.success(`${item.name} added to cart`);
   };
 
+  const focusPosterCard = (posterId: number) => {
+    setCategory("ALL");
+    setSearch("");
+    setModalImg(null);
+
+    window.requestAnimationFrame(() => {
+      setHighlightedPoster({ id: posterId, nonce: Date.now() });
+    });
+  };
+
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
@@ -237,8 +245,8 @@ function HomePage() {
         <AnnouncementBar />
       </div>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-grow flex-col gap-6 px-3 py-5 sm:px-6 sm:py-8 lg:gap-10 lg:px-8 lg:py-10">
-        <Hero />
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-grow flex-col gap-5 px-3 py-4 sm:px-6 sm:py-6 lg:gap-8 lg:px-8 lg:py-8">
+        <Hero onFeaturedPosterSelect={focusPosterCard} />
         <CategoryBar
           categoryOptions={categoryOptions}
           selectedCategory={category}
@@ -252,6 +260,7 @@ function HomePage() {
           setCart={setCart}
           addToCart={addToCart}
           openModal={setModalImg}
+          highlightedPoster={highlightedPoster}
         />
       </main>
 

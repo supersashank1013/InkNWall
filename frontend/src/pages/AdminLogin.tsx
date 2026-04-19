@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { apiUrl } from "../lib/api";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -15,7 +16,7 @@ export default function AdminLogin() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/login", {
+      const res = await fetch(apiUrl("/api/admin/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

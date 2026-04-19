@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminNavbar from "./admin/AdminNavbar";
 import AdminFooter from "./admin/AdminFooter";
+import { apiUrl } from "../lib/api";
 
 interface UploadSlot {
   file: File | null;
@@ -43,6 +44,26 @@ interface Order {
   status: OrderStatus;
   createdAt?: string;
   items: OrderItem[];
+}
+
+interface BackendPoster {
+  id: number;
+  name: string;
+  imageUrl: string;
+  category: string;
+  price: number | string;
+  isPremium?: boolean;
+}
+
+interface AdminPoster {
+  id: number;
+  name: string;
+  imageUrl: string;
+  img: string;
+  category: string;
+  cat: string;
+  price: number;
+  isPremium: boolean;
 }
 
 const ORDER_TABS = [
@@ -92,7 +113,7 @@ const formatDate = (date?: string) => {
 
 export default function Admin() {
   const [uploadSlots, setUploadSlots] = useState<UploadSlot[]>(Array.from({ length: 10 }, () => ({ ...EMPTY_UPLOAD_SLOT })));
-  const [posters, setPosters] = useState<any[]>([]);
+  const [posters, setPosters] = useState<AdminPoster[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<OrderTab>("PLACED");
   const [activePanel, setActivePanel] = useState<AdminPanel>("ORDERS");
@@ -162,14 +183,16 @@ export default function Admin() {
   }, []);
 
 const fetchPosters = () => {
-  fetch("http://localhost:8080/api/posters")
+  fetch(apiUrl("/api/posters"))
     .then((res) => res.json())
     .then((data) => {
       const mapped = Array.isArray(data)
-        ? data.map((p: any) => ({
+        ? (data as BackendPoster[]).map((p) => ({
             id: p.id,
             name: p.name,
+            imageUrl: p.imageUrl,
             img: p.imageUrl,        // backend → frontend
+            category: p.category,
             cat: p.category,        // backend → frontend
             price: Number(p.price),
             isPremium: p.isPremium ?? false, // ⭐ FINAL FIX
@@ -187,7 +210,7 @@ const fetchPosters = () => {
 
   const fetchOrders = () => {
     setOrdersLoading(true);
-    fetch("http://localhost:8080/api/orders/recent", {
+    fetch(apiUrl("/api/orders/recent"), {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
       },
@@ -219,11 +242,11 @@ const fetchPosters = () => {
   };
 
   const downloadCSV = () => {
-    window.open("http://localhost:8080/api/orders/export");
+    window.open(apiUrl("/api/orders/export"));
   };
 
   async function fetchLogs() {
-    const res = await fetch("http://localhost:8080/api/admin/logs", {
+    const res = await fetch(apiUrl("/api/admin/logs"), {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
       },
@@ -331,15 +354,41 @@ const fetchPosters = () => {
     if (!announcement.trim()) return;
     setSending(true);
     try {
-      const formData = new FormData();
-      formData.append("message", announcement);
-      selectedPosters.forEach((id) => formData.append("posterIds", id.toString()));
-      const res = await fetch("http://localhost:8080/api/announcement", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Announcement failed");
+      const posterIdsToSend = selectedPosters.length > 0 ? selectedPosters : [undefined];
+
+      for (const posterId of posterIdsToSend) {
+        const formData = new FormData();
+        formData.append("message", announcement);
+        if (posterId) {
+          formData.append("posterId", posterId.toString());
+        }
+
+        const res = await fetch(apiUrl("/api/announcement"), {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error("Announcement failed");
+      }
+
+      const selectedAnnouncementPosters = selectedPosterPreviews
+        .filter((poster) => poster.imageUrl)
+        .map((poster) => ({
+          id: poster.id,
+          name: poster.name,
+          imageUrl: poster.imageUrl,
+        }));
+
+      if (selectedAnnouncementPosters.length > 0) {
+        localStorage.setItem(
+          "inknwall_featured_announcement_poster",
+          JSON.stringify(selectedAnnouncementPosters)
+        );
+      } else {
+        localStorage.removeItem("inknwall_featured_announcement_poster");
+      }
+      window.dispatchEvent(new Event("inknwall_featured_announcement_poster"));
       toast.success("Announcement sent");
       setAnnouncement("");
       setSelectedPosters([]);
@@ -354,7 +403,7 @@ const fetchPosters = () => {
 
   const handleUpload = async () => {
 
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("adminToken");
 
   const slotsToUpload = uploadSlots.filter(
     (slot) =>
@@ -381,7 +430,7 @@ const fetchPosters = () => {
       formData.append("isPremium", String(slot.isPremium));
       formData.append("file", slot.file as File);
 
-      const res = await fetch("http://localhost:8080/api/posters/upload", {
+      const res = await fetch(apiUrl("/api/posters/upload"), {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
@@ -407,7 +456,7 @@ const fetchPosters = () => {
 };
 
   const handleDelete = async (id: number) => {
-    await fetch(`http://localhost:8080/api/posters/${id}`, {
+    await fetch(apiUrl(`/api/posters/${id}`), {
       method: "DELETE",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
@@ -417,7 +466,7 @@ const fetchPosters = () => {
   const updateOrderStatus = async (id: number, newStatus: OrderStatus) => {
     setUpdatingOrderId(id);
     try {
-      const res = await fetch(`http://localhost:8080/api/orders/${id}/status`, {
+      const res = await fetch(apiUrl(`/api/orders/${id}/status`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -683,7 +732,7 @@ const fetchPosters = () => {
               <div className="space-y-6 rounded-2xl border border-white/10 bg-[#111]/80 p-8">
                 <div>
                   <h2 className="text-xl font-bold">Create Announcement</h2>
-                  <p className="mt-1 text-sm text-gray-400">Write the message and pick up to 4 posters to include.</p>
+                  <p className="mt-1 text-sm text-gray-400">Write the message and pick up to 4 posters to feature.</p>
                 </div>
                 <textarea
                   value={announcement}
@@ -695,7 +744,7 @@ const fetchPosters = () => {
                   <p className="text-sm text-gray-400">Selected posters: {selectedPosters.length}/4</p>
                   <p className="text-xs text-gray-500">Click any poster below to add or remove it</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid max-h-[420px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-4">
                   {posters.map((poster) => (
                     <div
                       key={poster.id}
@@ -740,7 +789,7 @@ const fetchPosters = () => {
                     <div className="space-y-3">
                       <p className="text-sm font-semibold text-white">Featured Posters</p>
                       {selectedPosterPreviews.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid max-h-80 grid-cols-2 gap-3 overflow-y-auto pr-1">
                           {selectedPosterPreviews.map((poster) => (
                             <div key={poster.id} className="overflow-hidden rounded-xl border border-white/10 bg-[#0d0d0d]">
                               <img src={poster.imageUrl} alt={poster.name} className="h-28 w-full object-cover" />

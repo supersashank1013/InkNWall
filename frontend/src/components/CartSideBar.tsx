@@ -12,6 +12,14 @@ interface Props {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
+interface StoredUser {
+  id: number | string;
+  roll?: string;
+  hostel?: string;
+  phone?: string;
+  [key: string]: unknown;
+}
+
 export default function CartSidebar({
   cart,
   isOpen,
@@ -21,7 +29,7 @@ export default function CartSidebar({
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const [showAuth, setShowAuth] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [profileUser, setProfileUser] = useState<any>(null);
+  const [profileUser, setProfileUser] = useState<StoredUser | null>(null);
   const navigate = useNavigate();
 
   const increase = (id: number) => {
@@ -43,7 +51,7 @@ export default function CartSidebar({
   };
 
   const handleCheckout = async () => {
-    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
     const user = storedUser
       ? { ...storedUser, roll: storedUser.roll?.toLowerCase?.() ?? storedUser.roll }
       : null;
@@ -261,7 +269,7 @@ export default function CartSidebar({
         <AuthModal
           onClose={() => setShowAuth(false)}
           onProfileIncomplete={() => {
-            const user = JSON.parse(localStorage.getItem("user") || "null");
+            const user = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
             if (user) {
               setProfileUser(user);
               setShowCompleteProfile(true);
@@ -276,7 +284,7 @@ export default function CartSidebar({
           user={profileUser}
           onDone={() => {
             setShowCompleteProfile(false);
-            const updatedUser = JSON.parse(localStorage.getItem("user") || "null");
+            const updatedUser = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
             setProfileUser(updatedUser);
             toast.success("Profile completed successfully");
           }}

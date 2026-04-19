@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "../lib/api";
 
 interface ProfileUser {
   id: number | string;
@@ -17,7 +18,7 @@ export default function CompleteProfileModal({ user, onDone }: CompleteProfileMo
   const isPhoneLocked = Boolean(user.phone);
 
   const handleSave = async () => {
-    const res = await fetch(`http://localhost:8080/api/users/${user.id}`, {
+    const res = await fetch(apiUrl(`/api/users/${user.id}`), {
   method: "PUT",
   headers: {
     "Content-Type": "application/json",

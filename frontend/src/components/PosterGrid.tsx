@@ -1,4 +1,5 @@
 import { Eye, Minus, Plus, ShoppingBag } from "lucide-react";
+import { useEffect } from "react";
 import type { Poster } from "../data/posters";
 import type { CartItem } from "../App";
 
@@ -9,6 +10,7 @@ interface Props {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   addToCart: (id: number) => void;
   openModal: (img: string) => void;
+  highlightedPoster?: { id: number; nonce: number } | null;
 }
 
 export default function PosterGrid({
@@ -18,7 +20,23 @@ export default function PosterGrid({
   setCart,
   addToCart,
   openModal,
+  highlightedPoster,
 }: Props) {
+  useEffect(() => {
+    if (!highlightedPoster) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const posterCard = document.getElementById(`poster-card-${highlightedPoster.id}`);
+      posterCard?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [highlightedPoster, posters]);
+
   const increase = (id: number) => {
     setCart((prev) =>
       prev.map((i) =>
@@ -58,12 +76,58 @@ export default function PosterGrid({
   }
 
   return (
-    <section
-      id="shop"
-      ref={shopRef}
-      className="space-y-4 rounded-[26px] border border-white/10 bg-[#0b0b0b]/82 px-3 py-4 shadow-[0_28px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:space-y-6 sm:rounded-[32px] sm:px-5 sm:py-6 lg:px-6 lg:py-8"
-    >
-      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:pb-5 lg:flex-row lg:items-end lg:justify-between">
+    <>
+      <style>{`
+        @keyframes poster-card-flash {
+          0% {
+            opacity: 0;
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            background: rgba(255, 255, 255, 0);
+          }
+          12% {
+            opacity: 1;
+            box-shadow:
+              0 0 0 5px rgba(255, 255, 255, 0.82),
+              0 0 0 10px rgba(251, 146, 60, 0.32),
+              0 26px 80px rgba(255, 95, 31, 0.32);
+            background: rgba(255, 255, 255, 0.22);
+          }
+          42% {
+            opacity: 0.9;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.52),
+              0 0 0 7px rgba(251, 146, 60, 0.2),
+              0 24px 70px rgba(255, 95, 31, 0.22);
+            background: rgba(255, 255, 255, 0.08);
+          }
+          100% {
+            opacity: 0;
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            background: rgba(255, 255, 255, 0);
+          }
+        }
+
+        @keyframes poster-card-pop {
+          0% { transform: scale(1); }
+          24% { transform: scale(1.025); }
+          100% { transform: scale(1); }
+        }
+
+        .poster-card-flash {
+          animation: poster-card-flash 1.15s ease-out forwards;
+        }
+
+        .poster-card-pop {
+          animation: poster-card-pop 0.72s cubic-bezier(0.2, 1, 0.2, 1);
+        }
+      `}</style>
+
+      <section
+        id="shop"
+        ref={shopRef}
+        className="space-y-4 rounded-[26px] border border-white/10 bg-[#0b0b0b]/82 px-3 py-4 shadow-[0_28px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:space-y-6 sm:rounded-[32px] sm:px-5 sm:py-6 lg:px-6 lg:py-8"
+      >
+        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-200">Poster library</p>
           <h2 className="mt-2 text-lg font-black tracking-tight text-white sm:text-2xl">Find the print that changes the whole room</h2>
@@ -78,21 +142,32 @@ export default function PosterGrid({
         </div>
       </div>
 
-      <div className="grid max-[360px]:grid-cols-1 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {posters.map((p, index) => {
-          console.log("POSTER:", p);
-          const cartItem = cart.find((c) => c.id === p.id);
-          const qtyInCart = cartItem?.quantity || 0;
+        <div className="grid max-[360px]:grid-cols-1 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {posters.map((p, index) => {
+            console.log("POSTER:", p);
+            const cartItem = cart.find((c) => c.id === p.id);
+            const qtyInCart = cartItem?.quantity || 0;
+            const isHighlighted = highlightedPoster?.id === p.id;
 
-          return (
-            <div
-              key={p.id}
-              className="group relative flex h-full flex-col overflow-visible rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-2 shadow-[0_16px_50px_rgba(0,0,0,0.28)] transition-all duration-500 hover:-translate-y-1 hover:border-orange-400/35 hover:shadow-[0_24px_70px_rgba(255,95,31,0.14)] animate-in fade-in zoom-in-95 slide-in-from-bottom-8 sm:rounded-[24px] sm:p-2.5"
-              style={{
-                animationDelay: `${index * 50}ms`,
-                animationFillMode: "both",
-              }}
-            >
+            return (
+              <div
+                id={`poster-card-${p.id}`}
+                key={p.id}
+                className={`group relative flex h-full scroll-mt-28 flex-col overflow-visible rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-2 shadow-[0_16px_50px_rgba(0,0,0,0.28)] transition-all duration-500 hover:-translate-y-1 hover:border-orange-400/35 hover:shadow-[0_24px_70px_rgba(255,95,31,0.14)] animate-in fade-in zoom-in-95 slide-in-from-bottom-8 sm:rounded-[24px] sm:p-2.5 ${
+                  isHighlighted ? "poster-card-pop border-orange-300/80" : ""
+                }`}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: "both",
+                }}
+              >
+                {isHighlighted && highlightedPoster && (
+                  <span
+                    key={highlightedPoster.nonce}
+                    className="poster-card-flash pointer-events-none absolute inset-0 z-50 rounded-[20px] sm:rounded-[24px]"
+                  />
+                )}
+
               {p.isPremium && (
                 <>
                   {/* Triangle INSIDE */}
@@ -152,9 +227,6 @@ export default function PosterGrid({
                   <h3 className="line-clamp-2 min-h-[2.25rem] text-[13px] font-black uppercase tracking-tight text-gray-100 sm:text-base">
                     {p.name}
                   </h3>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-500 sm:text-[11px] sm:tracking-[0.18em]">
-                    Curated wall print
-                  </p>
                 </div>
 
                 <div className="flex flex-col items-stretch gap-2 border-t border-white/10 pt-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2 sm:pt-3">
@@ -198,10 +270,11 @@ export default function PosterGrid({
                   )}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </>
   );
 }
