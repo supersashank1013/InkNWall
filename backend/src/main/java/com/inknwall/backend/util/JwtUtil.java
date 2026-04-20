@@ -2,6 +2,7 @@ package com.inknwall.backend.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +15,8 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final String SECRET = "inknwall_super_secret_key_123456789";
+    @Value("${jwt.secret}")
+    private String SECRET;
 
     private Key getKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -38,7 +40,5 @@ public class JwtUtil {
                 .getBody()
                 .getSubject();
     }
-
-
 
 }
