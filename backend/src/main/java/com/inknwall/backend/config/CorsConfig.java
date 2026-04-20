@@ -16,7 +16,9 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:5173",
-                                "https://inknwall-frontend.onrender.com"
+                                "https://inknwall-frontend.onrender.com",
+                                "https://inknwall.in",
+                                "https://www.inknwall.in"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
