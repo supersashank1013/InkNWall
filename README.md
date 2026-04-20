@@ -163,3 +163,6 @@ Open-source community
 
 📄 License
 This project is for educational and demonstration purposes.
+
+🧠 System Design
+![alt text](image.png)
