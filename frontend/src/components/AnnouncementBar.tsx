@@ -32,10 +32,9 @@ export default function AnnouncementBar() {
 
   const message = announcement?.message?.trim();
   const marqueeDuration = useMemo(() => {
-    if (!message) return 18;
-    return Math.max(18, Math.min(32, Math.round(message.length * 0.45)));
+    if (!message) return 12;
+    return Math.max(10, Math.min(24, Math.round(message.length * 0.25)));
   }, [message]);
-  const marqueeItems = useMemo(() => [0, 1], []);
 
   if (!message) return null;
 
@@ -43,8 +42,8 @@ export default function AnnouncementBar() {
     <>
       <style>{`
         @keyframes announcement-marquee {
-          from { transform: translate3d(0, 0, 0); }
-          to { transform: translate3d(-50%, 0, 0); }
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100%, 0, 0); }
         }
       `}</style>
 
@@ -68,20 +67,15 @@ export default function AnnouncementBar() {
               }}
             >
               <div
-                className="flex w-max items-stretch"
+                className="inline-block whitespace-nowrap pl-[100%]"
                 style={{
                   animation: `announcement-marquee ${marqueeDuration}s linear infinite`,
                   willChange: "transform",
                 }}
               >
-                {marqueeItems.map((item) => (
-                  <div
-                    key={item}
-                    className="flex min-w-full shrink-0 items-center gap-3 whitespace-nowrap pr-6 text-xs font-semibold tracking-[0.05em] text-white/90 sm:text-sm sm:tracking-[0.06em]"
-                  >
-                    <span className="text-orange-100/90">{message}</span>
-                  </div>
-                ))}
+                <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-[0.05em] text-white/90 sm:text-sm sm:tracking-[0.06em]">
+                  <span className="text-orange-100/90">{message}</span>
+                </div>
               </div>
             </div>
           </div>

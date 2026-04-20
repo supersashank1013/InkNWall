@@ -111,34 +111,32 @@ export default function Checkout() {
 
   if (success) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-[#060606] px-4 py-8 text-white sm:px-6 lg:px-8">
+      <div className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-[#060606] px-4 py-8 text-white sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,95,31,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_28%)]" />
         <div className="absolute left-10 top-16 h-52 w-52 rounded-full bg-orange-500/[0.14] blur-3xl" />
         <div className="absolute bottom-12 right-10 h-60 w-60 rounded-full bg-white/[0.06] blur-3xl" />
 
-        <div className="relative flex min-h-screen items-center justify-center">
-          <div className="w-full max-w-xl rounded-[32px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_30px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
-              Order Confirmed
-            </p>
-            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-              Order Placed
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-gray-300 sm:text-base">
-              Your posters will be delivered soon. Everything is locked in and ready to go.
-            </p>
+        <div className="relative z-10 w-full max-w-xl rounded-[32px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_30px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+            Order Confirmed
+          </p>
+          <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+            Order Placed
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-gray-300 sm:text-base">
+            Your posters will be delivered soon. Check out your Mail and Profile to track your Order.
+          </p>
 
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.setItem("cart", JSON.stringify([]));
-                navigate("/", { replace: true, state: { cart: [], openCart: false } });
-              }}
-              className="mt-8 rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-500 active:scale-95"
-            >
-              Continue Shopping
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("cart", JSON.stringify([]));
+              navigate("/", { replace: true, state: { cart: [], openCart: false } });
+            }}
+            className="mt-8 w-full rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-500 active:scale-95 sm:w-auto"
+          >
+            Continue Shopping
+          </button>
         </div>
       </div>
     );

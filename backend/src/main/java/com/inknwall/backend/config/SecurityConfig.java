@@ -24,27 +24,39 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
+
+                        // Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-
-                        .requestMatchers("/api/admin/login").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/orders/**").permitAll()
-                        .requestMatchers("/api/posters/**").permitAll()
-                        .requestMatchers("/api/admin/**").permitAll()
-                        .requestMatchers("/api/announcement/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/announcement").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/announcement").permitAll()
+                        // Public Auth
                         .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
                         .requestMatchers("/api/users/google-login").permitAll()
+                        .requestMatchers("/api/admin/login").permitAll()
 
+                        // Public Content
+                        .requestMatchers(HttpMethod.GET, "/api/announcement/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posters/**").permitAll()
+
+                        // Protected
+                        .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers("/api/posters/upload").authenticated()
-                        .requestMatchers("/api/users/**").authenticated()
-                        .requestMatchers("/api/orders/my").authenticated()
-                        .requestMatchers("/api/admin/logs").authenticated()
+                        .requestMatchers("/api/admin/**").authenticated()
+
                         // everything else protected
                         .anyRequest().authenticated()
+
+//                        .requestMatchers("/api/users/**").permitAll()
+//                        .requestMatchers("/api/orders/**").permitAll()
+//                        .requestMatchers("/api/posters/**").permitAll()
+//                        .requestMatchers("/api/admin/**").permitAll()
+//                        .requestMatchers("/api/announcement/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/api/announcement").permitAll()
+//                        .requestMatchers("/api/posters/upload").authenticated()
+//                        .requestMatchers("/api/users/**").authenticated()
+//                        .requestMatchers("/api/orders/my").authenticated()
+//                        .requestMatchers("/api/admin/logs").authenticated()
+
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

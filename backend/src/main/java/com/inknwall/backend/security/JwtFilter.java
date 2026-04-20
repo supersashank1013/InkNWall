@@ -50,8 +50,8 @@
                                 new UsernamePasswordAuthenticationToken(
                                         email,
                                         null,
-//                                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-                                        null
+                                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+//                                        null
                                 );
 
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

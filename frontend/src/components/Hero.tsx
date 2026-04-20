@@ -98,18 +98,17 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
   const [featuredPosters, setFeaturedPosters] = useState<AnnouncementPoster[]>(() => getStoredFeaturedPosters());
 
   const hasFeaturedPosters = featuredPosters.length > 0;
-  const activeIndex = hasFeaturedPosters ? 0 : index;
+  const currentLength = hasFeaturedPosters ? featuredPosters.length : images.length;
+  const activeIndex = index % (currentLength || 1);
 
   useEffect(() => {
-    if (hasFeaturedPosters) {
-      return;
-    }
+    if (currentLength <= 1) return;
 
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
+      setIndex((prev) => (prev + 1) % currentLength);
     }, 4000);
     return () => clearInterval(timer);
-  }, [hasFeaturedPosters]);
+  }, [currentLength]);
 
   useEffect(() => {
     let isMounted = true;
@@ -224,31 +223,29 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
 
               <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10 bg-[#080808]">
                 {hasFeaturedPosters ? (
-                  <div className="custom-scrollbar relative z-0 flex h-full snap-x snap-mandatory gap-3 overflow-x-auto">
-                    {featuredPosters.map((poster) => (
-                      <button
-                        key={`${poster.id ?? poster.imageUrl}-${poster.name ?? "poster"}`}
-                        type="button"
-                        onClick={() => openFeaturedPoster(poster)}
-                        aria-label={`Open ${poster.name?.trim() || "featured poster"} in shop`}
-                        className={`group relative h-full snap-start overflow-hidden text-left ${
-                          featuredPosters.length > 1 ? "min-w-[86%] sm:min-w-[82%]" : "min-w-full"
-                        }`}
-                      >
-                        <img
-                          src={poster.imageUrl}
-                          alt={poster.name?.trim() || "Featured Drop"}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-70" />
-                        {poster.name && (
-                          <div className="absolute inset-x-0 bottom-0 p-4 text-sm font-semibold text-white sm:p-5">
-                            {poster.name}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  featuredPosters.map((poster, i) => (
+                    <button
+                      key={`${poster.id ?? poster.imageUrl}-${poster.name ?? "poster"}`}
+                      type="button"
+                      onClick={() => openFeaturedPoster(poster)}
+                      aria-label={`Open ${poster.name?.trim() || "featured poster"} in shop`}
+                      className={`group absolute inset-0 block h-full w-full overflow-hidden text-left transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        i === activeIndex ? "z-10 scale-100 opacity-100 pointer-events-auto" : "z-0 scale-110 opacity-0 pointer-events-none"
+                      }`}
+                    >
+                      <img
+                        src={poster.imageUrl}
+                        alt={poster.name?.trim() || "Featured Drop"}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-70" />
+                      {poster.name && (
+                        <div className="absolute inset-x-0 bottom-0 p-4 text-sm font-semibold text-white sm:p-5">
+                          {poster.name}
+                        </div>
+                      )}
+                    </button>
+                  ))
                 ) : (
                   images.map((img, i) => (
                     <img
@@ -256,15 +253,15 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
                       src={img}
                       alt={`Featured Drop ${i + 1}`}
                       className={`absolute inset-0 h-full w-full object-cover transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        i === activeIndex ? "scale-100 opacity-100" : "scale-110 opacity-0"
+                        i === activeIndex ? "z-10 scale-100 opacity-100" : "z-0 scale-110 opacity-0"
                       }`}
                     />
                   ))
                 )}
 
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/25 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-[#050505] via-[#050505]/25 to-transparent" />
 
-                <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-4">
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between p-3 sm:p-4">
                   <div className="rounded-lg border border-white/10 bg-black/35 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-normal text-white/85 backdrop-blur-xl sm:text-[10px]">
                     Featured wall drop
                   </div>
@@ -272,14 +269,14 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
               </div>
             </div>
 
-            {!hasFeaturedPosters && (
-              <div className="mt-3 hidden rounded-lg px-3 py-2 backdrop-blur-2xl sm:block">
+            {currentLength > 1 && (
+              <div className="mt-3 rounded-lg px-3 py-2 backdrop-blur-2xl block">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-center justify-between gap-4 sm:justify-end">
                     <div className="flex gap-2">
-                      {images.map((img, i) => (
+                      {Array.from({ length: currentLength }).map((_, i) => (
                         <span
-                          key={`${img}-dot`}
+                          key={`dot-${i}`}
                           className={`h-2.5 rounded-full transition-all duration-300 ${
                             i === activeIndex ? "w-8 bg-orange-400" : "w-2.5 bg-white/20"
                           }`}
