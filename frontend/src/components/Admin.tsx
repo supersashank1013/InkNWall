@@ -241,9 +241,34 @@ const fetchPosters = () => {
       .finally(() => setOrdersLoading(false));
   };
 
-  const downloadCSV = () => {
-    window.open(apiUrl("/api/orders/export"));
-  };
+  const downloadCSV = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(apiUrl("/api/orders/export"), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Download failed");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "orders.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+  } catch (err) {
+    console.error(err);
+    alert("CSV download failed");
+  }
+};
 
   async function fetchLogs() {
     const res = await fetch(apiUrl("/api/admin/logs"), {
