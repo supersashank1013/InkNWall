@@ -31,6 +31,7 @@ public class PosterController {
     public List<Poster> getAllPosters() {
         return posterService.getAllPosters();
     }
+
     @DeleteMapping("/{id}")
     public void deletePoster(@PathVariable Long id) {
         posterService.deletePoster(id);

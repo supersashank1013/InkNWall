@@ -3,6 +3,8 @@ package com.inknwall.backend.entity;
 import jakarta.persistence.*;
 import com.inknwall.backend.entity.Poster;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +22,7 @@ public class Announcement {
     private String message;
 
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     @JoinColumn(name = "poster_id")
     private Poster poster; // can be null (optional)
 

@@ -74,7 +74,7 @@ const ORDER_TABS = [
 
 const ADMIN_PANELS = [
   { key: "ORDERS" as const, label: "Order Tracking" },
-  { key: "ANNOUNCEMENTS" as const, label: "Create Announcement" },
+  { key: "ANNOUNCEMENTS" as const, label: "Announcements" },
   { key: "UPLOADS" as const, label: "Upload Posters" },
   { key: "LOGS" as const, label: "Admin Logs" },
   // { key: "PRICING" as const, label: "Pricing Config" },
@@ -133,6 +133,7 @@ export default function Admin() {
   const [adminUsername, setAdminUsername] = useState("Admin");
   const [logs, setLogs] = useState<Log[]>([]);
   const [logAdminFilter, setLogAdminFilter] = useState("ALL");
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const selectedPosterPreviews = posters.filter((poster) => selectedPosters.includes(poster.id));
   const announcementPreviewText = announcement.trim();
@@ -236,9 +237,21 @@ const fetchPosters = () => {
       })
       .catch(() => {
         setOrders([]);
-        toast.error("Failed to load orders");
+        toast.error("Failed to load orders", { duration: 2000 });
       })
       .finally(() => setOrdersLoading(false));
+  };
+
+  const fetchAnnouncements = () => {
+    fetch(apiUrl("/api/announcement"))
+      .then((res) => res.json())
+      .then((data) => {
+        setAnnouncements(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch announcements:", err);
+        setAnnouncements([]);
+      });
   };
 
   const downloadCSV = async () => {
@@ -285,6 +298,7 @@ const fetchPosters = () => {
     fetchPosters();
     fetchOrders();
     fetchLogs();
+    fetchAnnouncements();
   }, []);
 
   useEffect(() => {
@@ -369,7 +383,7 @@ const fetchPosters = () => {
       return;
     }
     if (selectedPosters.length >= 4) {
-      toast.error("Max 4 posters");
+      toast.error("Max 4 posters", { duration: 2000 });
       return;
     }
     setSelectedPosters((prev) => [...prev, id]);
@@ -418,7 +432,7 @@ const fetchPosters = () => {
       setAnnouncement("");
       setSelectedPosters([]);
     } catch {
-      toast.error("Failed to send announcement");
+      toast.error("Failed to send announcement", { duration: 2000 });
     } finally {
       setSending(false);
     }
@@ -439,7 +453,7 @@ const fetchPosters = () => {
   );
 
   if (slotsToUpload.length === 0) {
-    toast.error("Please upload images and fill all details");
+    toast.error("Please upload images and fill all details", { duration: 2000 });
     return;
   }
 
@@ -474,39 +488,130 @@ const fetchPosters = () => {
 
   } catch (err) {
     console.error(err);
-    toast.error("Upload failed");
+    toast.error("Upload failed", { duration: 2000 });
   } finally {
     setLoading(false);
   }
 };
 
   const handleDelete = async (id: number) => {
-    try {
-      console.log("Attempting to delete poster with ID:", id);
-      console.log("API URL:", apiUrl(`/api/posters/${id}`));
-      console.log("Token present:", !!token);
+    const performDelete = async (toastId: string) => {
+      toast.dismiss(toastId);
 
-      const response = await fetch(apiUrl(`/api/posters/${id}`), {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Failed to delete poster ${id}:`, response.status, errorText);
-        toast.error(`Failed to delete poster: ${response.status} ${response.statusText}`);
+      if (!token) {
+        toast.error("Admin authorization missing", { duration: 2000 });
         return;
       }
 
-      toast.success("Poster deleted successfully");
-      fetchPosters();
-    } catch (error) {
-      console.error("Error deleting poster:", error);
-      toast.error("Network error while deleting poster");
-    }
+      try {
+        const response = await fetch(apiUrl(`/api/posters/${id}`), {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to delete poster ${id}:`, response.status, errorText);
+          toast.error(`Delete failed: ${response.status} ${response.statusText}`, { duration: 2000 });
+          return;
+        }
+
+        toast.success("Poster deleted successfully");
+        fetchPosters();
+      } catch (err) {
+        console.error("Delete request failed:", err);
+        toast.error("Delete failed. Please try again.", { duration: 2000 });
+      }
+    };
+
+    toast(
+      (toastItem) => (
+        <div className="w-[320px] rounded-2xl border border-white/10 bg-[#101010] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="mb-4">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-300">Confirm Delete</p>
+            <p className="mt-2 text-sm leading-6 text-gray-200">
+              Are you sure you want to permanently delete this poster?
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => toast.dismiss(toastItem.id)}
+              className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => performDelete(toastItem.id)}
+              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 }
+    );
+  };
+
+  const handleDeleteAnnouncement = async (id: number) => {
+    const performDelete = async (toastId: string) => {
+      toast.dismiss(toastId);
+
+      try {
+        const response = await fetch(apiUrl(`/api/announcement/${id}`), {
+          method: "DELETE",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to delete announcement ${id}:`, response.status, errorText);
+          toast.error(`Delete failed: ${response.status} ${response.statusText}`, { duration: 2000 });
+          return;
+        }
+
+        toast.success("Announcement deleted successfully");
+        fetchAnnouncements();
+        // Clear localStorage if this was the featured announcement
+        localStorage.removeItem("inknwall_featured_announcement_poster");
+        window.dispatchEvent(new Event("inknwall_featured_announcement_poster"));
+      } catch (err) {
+        console.error("Delete request failed:", err);
+        toast.error("Delete failed. Please try again.", { duration: 2000 });
+      }
+    };
+
+    toast(
+      (toastItem) => (
+        <div className="w-[320px] rounded-2xl border border-white/10 bg-[#101010] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="mb-4">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-300">Confirm Delete</p>
+            <p className="mt-2 text-sm leading-6 text-gray-200">
+              Are you sure you want to delete this announcement? This will also remove any featured posters from the hero section.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => toast.dismiss(toastItem.id)}
+              className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => performDelete(toastItem.id)}
+              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 }
+    );
   };
 
   const updateOrderStatus = async (id: number, newStatus: OrderStatus) => {
@@ -524,7 +629,7 @@ const fetchPosters = () => {
       setOrders((prev) => prev.map((order) => (order.id === id ? { ...order, status: newStatus } : order)));
       toast.success(newStatus === "RECEIVED" ? "Order moved to pending" : "Order moved to delivered");
     } catch {
-      toast.error("Failed to update order status");
+      toast.error("Failed to update order status", { duration: 2000 });
     } finally {
       setUpdatingOrderId(null);
     }
@@ -774,7 +879,7 @@ const fetchPosters = () => {
             </section>
           )}
           {activePanel === "ANNOUNCEMENTS" && (
-            <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <section className="grid gap-6 lg:grid-cols-[1fr_1fr_1fr]">
               <div className="space-y-6 rounded-2xl border border-white/10 bg-[#111]/80 p-8">
                 <div>
                   <h2 className="text-xl font-bold">Create Announcement</h2>
@@ -851,6 +956,35 @@ const fetchPosters = () => {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="space-y-6 rounded-2xl border border-white/10 bg-[#111]/80 p-8">
+                <div>
+                  <h2 className="text-xl font-bold">Manage Announcements</h2>
+                  <p className="mt-1 text-sm text-gray-400">View and delete existing announcements.</p>
+                </div>
+                <div className="space-y-4">
+                  {announcements.length > 0 ? (
+                    announcements.map((announcement) => (
+                      <div key={announcement.id} className="rounded-xl border border-white/10 bg-[#0d0d0d] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className="text-sm text-white whitespace-pre-wrap break-words">{announcement.message}</p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteAnnouncement(announcement.id)}
+                            className="rounded-lg bg-red-600/20 px-3 py-1 text-sm text-red-400 transition hover:bg-red-600/30 hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-gray-500">
+                      No announcements yet.
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

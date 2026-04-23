@@ -31,4 +31,10 @@ public class AnnouncementService {
     public List<Announcement> getAll() {
         return announcementRepository.findAll();
     }
+    public void deleteAnnouncement(Long id) {
+        if (!announcementRepository.existsById(id)) {
+            throw new RuntimeException("Announcement not found");
+        }
+        announcementRepository.deleteById(id);
+    }
 }

@@ -3,6 +3,7 @@ package com.inknwall.backend.controller;
 import com.inknwall.backend.entity.Announcement;
 import com.inknwall.backend.service.AnnouncementService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,5 +31,11 @@ public class AnnouncementController {
     @GetMapping
     public List<Announcement> getAll() {
         return service.getAll();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteAnnouncement(@PathVariable Long id) {
+        service.deleteAnnouncement(id);
+        return ResponseEntity.ok("Announcement Deleted Successfully");
     }
 }

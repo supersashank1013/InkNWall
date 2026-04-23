@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.inknwall.backend.entity.Announcement;
+import com.inknwall.backend.repository.AnnouncementRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +24,8 @@ public class PosterService {
     private final Cloudinary cloudinary;
     private final PosterRepository posterRepository;
     private final AdminLogRepository adminLogRepository;
+    @Autowired
+    private AnnouncementRepository announcementRepository;
 
     public Poster uploadPoster(String name, String category, Double price, MultipartFile file, boolean isPremium) {
         try {
@@ -65,6 +69,18 @@ public class PosterService {
         return posterRepository.findAll();
     }
     public void deletePoster(Long id) {
+
+        // 🔹 Find only affected announcements (optimized)
+        List<Announcement> announcements = announcementRepository.findByPosterId(id);
+
+        // 🔹 Unlink poster from announcements
+        for (Announcement a : announcements) {
+            a.setPoster(null);
+        }
+
+        announcementRepository.saveAll(announcements);
+
+        // 🔹 Now safe to delete
         posterRepository.deleteById(id);
     }
 }
