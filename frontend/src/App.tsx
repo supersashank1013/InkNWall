@@ -34,6 +34,21 @@ interface CategoryOption {
 function App() {
   return (
     <Router>
+      <Toaster
+        position="top-left"
+        gutter={12}
+        toastOptions={{
+          duration: 2500,
+          style: {
+            background: "#111",
+            color: "#fff",
+            border: "1px solid #FF5F1F",
+            padding: "12px 16px",
+            fontSize: "13px",
+          },
+        }}
+      />
+
       <Routes>
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin" element={<Admin />} />

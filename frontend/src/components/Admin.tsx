@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AdminNavbar from "./admin/AdminNavbar";
 import AdminFooter from "./admin/AdminFooter";
 import { apiUrl } from "../lib/api";
@@ -1174,7 +1174,6 @@ const fetchPosters = () => {
         </div>
       </div>
       <AdminFooter />
-      <Toaster position="top-center" />
     </>
   );
 }

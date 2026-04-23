@@ -53,7 +53,7 @@ export default function AdminNavbar({ adminUsername }: Props) {
         </button>
 
         {showProfile && (
-          <div className="absolute right-0 top-full mt-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-[26px] border border-white/12 bg-white/8 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl md:top-14 md:mt-0 md:w-[340px]">
+          <div className="absolute right-0 top-full mt-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-[26px] border border-white/12 bg-[#111] p-5 shadow-[0_20px_80px_rgba(0,0,0,0.45)] md:top-14 md:mt-0 md:w-[340px]">
             <div className="pointer-events-none absolute -right-12 -top-10 h-28 w-28 rounded-full bg-orange-500/10 blur-3xl" />
             <div className="relative">
               <div className="flex items-center gap-4">
