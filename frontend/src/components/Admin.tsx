@@ -481,11 +481,32 @@ const fetchPosters = () => {
 };
 
   const handleDelete = async (id: number) => {
-    await fetch(apiUrl(`/api/posters/${id}`), {
-      method: "DELETE",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    fetchPosters();
+    try {
+      console.log("Attempting to delete poster with ID:", id);
+      console.log("API URL:", apiUrl(`/api/posters/${id}`));
+      console.log("Token present:", !!token);
+
+      const response = await fetch(apiUrl(`/api/posters/${id}`), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to delete poster ${id}:`, response.status, errorText);
+        toast.error(`Failed to delete poster: ${response.status} ${response.statusText}`);
+        return;
+      }
+
+      toast.success("Poster deleted successfully");
+      fetchPosters();
+    } catch (error) {
+      console.error("Error deleting poster:", error);
+      toast.error("Network error while deleting poster");
+    }
   };
 
   const updateOrderStatus = async (id: number, newStatus: OrderStatus) => {
