@@ -52,7 +52,7 @@
                                 new UsernamePasswordAuthenticationToken(
                                         email,
                                         null,
-                                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
 //                                        null
                                 );
 
