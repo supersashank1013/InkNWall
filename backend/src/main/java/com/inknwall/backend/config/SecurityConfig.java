@@ -37,7 +37,7 @@ public class SecurityConfig {
                         // Public Content
                         .requestMatchers(HttpMethod.GET, "/api/announcement/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posters/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/posters/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/posters/**").permitAll()
 
                         // Protected
                         .requestMatchers("/api/orders/**").authenticated()
@@ -60,7 +60,7 @@ public class SecurityConfig {
 
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
