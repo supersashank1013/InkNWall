@@ -37,7 +37,7 @@ public class SecurityConfig {
                         // Public Content
                         .requestMatchers(HttpMethod.GET, "/api/announcement/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posters/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/posters/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/posters/**").authenticated()
 
                         // Protected
                         .requestMatchers("/api/orders/**").authenticated()
