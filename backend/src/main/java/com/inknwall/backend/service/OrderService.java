@@ -147,7 +147,7 @@ public class OrderService {
                     <p style="margin-top:15px; font-size:16px;"><b>Total: Rs.%s</b></p>
                     <p><b>Delivery Address:</b><br/>%s</p>
                     <div style="text-align:center; margin-top:25px;">
-                        <a href="/profile"
+                        <a href="https://inknwall.in/profile"
                            style="background:#00ff9c; color:black; padding:12px 25px; text-decoration:none; border-radius:6px; font-weight:bold; display:inline-block;">
                            Track Your Order
                         </a>
