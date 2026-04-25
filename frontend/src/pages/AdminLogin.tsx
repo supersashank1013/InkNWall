@@ -27,13 +27,19 @@ export default function AdminLogin() {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const res = await fetch(apiUrl("/api/admin/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         toast.error("User ID or password is incorrect", { duration: 2000 });
@@ -42,13 +48,25 @@ export default function AdminLogin() {
 
       const token = await res.text(); // ⚠️ your backend returns string
 
-      localStorage.setItem("adminToken", token);
+      // Ensure localStorage is available (some mobile browsers have restrictions)
+      try {
+        localStorage.setItem("adminToken", token);
+      } catch (storageError) {
+        console.error("localStorage error:", storageError);
+        toast.error("Unable to save login session. Please check your browser settings.", { duration: 3000 });
+        return;
+      }
 
       toast.success("Admin login successful 🚀");
 
       navigate("/admin");
-    } catch {
-      toast.error("Login failed. Please try again.", { duration: 2000 });
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.error("Login timed out. Please check your connection and try again.", { duration: 3000 });
+      } else {
+        toast.error("Login failed. Please try again.", { duration: 2000 });
+      }
     }
   };
 
@@ -65,6 +83,11 @@ export default function AdminLogin() {
             value={email}
             className="w-full p-3 bg-black border border-white/10 rounded-lg focus:border-orange-500 outline-none"
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
+            required
           />
 
           <div className="relative">
@@ -74,6 +97,11 @@ export default function AdminLogin() {
               value={password}
               className="w-full p-3 pr-12 bg-black border border-white/10 rounded-lg focus:border-orange-500 outline-none"
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              required
             />
             <button
               type="button"
@@ -87,7 +115,8 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-orange-600 rounded-lg font-bold hover:bg-orange-500 transition"
+            className="w-full py-3 bg-orange-600 rounded-lg font-bold hover:bg-orange-500 transition active:bg-orange-700"
+            disabled={!email.trim() || !password.trim()}
           >
             Login
           </button>

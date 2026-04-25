@@ -72,22 +72,35 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
                   profilePic: userData.picture
                 };
 
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
                 const response = await fetch(apiUrl("/api/users/google-login"), {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json"
                   },
-                  body: JSON.stringify(payload)
+                  body: JSON.stringify(payload),
+                  signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
+
                 if (!response.ok) {
-                  throw new Error("Backend failed");
+                  const errorText = await response.text().catch(() => "Login failed");
+                  throw new Error(`Backend failed: ${errorText}`);
                 }
 
                 const data = await response.json();
 
                 // 🔥 STORE TOKEN (MOST IMPORTANT)
-                localStorage.setItem("token", data.token);
+                try {
+                  localStorage.setItem("token", data.token);
+                } catch (storageError) {
+                  console.error("localStorage error:", storageError);
+                  toast.error("Unable to save login session. Please check your browser settings.", { duration: 3000 });
+                  return;
+                }
 
                 // 🔥 EXTRACT USER PROPERLY
                 const normalizedUser = {
@@ -100,7 +113,13 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
                   phone: data.user.phone,
                 };
 
-                localStorage.setItem("user", JSON.stringify(normalizedUser));
+                try {
+                  localStorage.setItem("user", JSON.stringify(normalizedUser));
+                } catch (storageError) {
+                  console.error("localStorage error:", storageError);
+                  toast.error("Unable to save user data. Please check your browser settings.", { duration: 3000 });
+                  return;
+                }
 
                 if (!normalizedUser.hostel || !normalizedUser.phone) {
                   setUser(normalizedUser);
@@ -113,13 +132,23 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
 
               } catch (err) {
                 console.error(err);
-                toast.error("Unable to sign in right now");
+                if (err instanceof Error && err.name === 'AbortError') {
+                  toast.error("Login timed out. Please check your connection and try again.");
+                } else {
+                  toast.error("Unable to sign in right now");
+                }
               }
             }}
             onError={() => {
               setMessage("Google sign-in failed. Please try again.");
               toast.error("Google sign-in failed. Please try again.");
             }}
+            useOneTap={false}
+            theme="filled_black"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            width="300"
           />
         </div>
 

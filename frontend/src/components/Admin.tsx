@@ -268,18 +268,37 @@ const fetchPosters = () => {
     if (!res.ok) throw new Error("Download failed");
 
     const blob = await res.blob();
+
+    // Handle IE/Edge
+    if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
+      (window.navigator as any).msSaveOrOpenBlob(blob, "orders.csv");
+      return;
+    }
+
     const url = window.URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "orders.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    // Check if device is mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // For mobile devices, open in new tab/window which will prompt download
+      window.open(url, '_blank');
+    } else {
+      // For desktop, use the standard download approach
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "orders.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Clean up the blob URL after a short delay
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
 
   } catch (err) {
     console.error(err);
-    alert("CSV download failed");
+    toast.error("CSV download failed");
   }
 };
 
