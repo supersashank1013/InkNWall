@@ -46,20 +46,20 @@ export default function PosterModal({
       {/* 🖼️ IMAGE CONTAINER */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative z-10 w-full max-w-[min(95vw,780px)] max-h-[90vh] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative z-10 mx-auto flex w-full max-w-[min(92vw,860px)] max-h-[92vh] items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           show ? "scale-100 translate-y-0" : "scale-90 translate-y-10"
         }`}
       >
 
         {/* Glow frame */}
-        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-br from-orange-500/20 to-orange-900/30 blur-xl opacity-70"></div>
+        <div className="absolute inset-0 m-auto h-[520px] w-[520px] rounded-3xl bg-gradient-to-br from-orange-500/20 to-orange-900/30 blur-xl opacity-70" />
 
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0b0b0b]/90 shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
-          <div className="aspect-[3/4] w-full bg-black/90 sm:aspect-[4/5] md:aspect-[3/4] lg:aspect-[11/14]">
+        <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0b0b0b]/90 shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
+          <div className="aspect-[3/4] w-full max-h-[90vh] bg-black/90 sm:aspect-[4/5] md:aspect-[3/4] lg:aspect-[11/14]">
             <img
               src={img}
               alt="Enlarged Poster view"
-              className="h-full w-full object-contain" 
+              className="h-full w-full object-contain"
             />
           </div>
         </div>
