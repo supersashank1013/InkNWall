@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { apiUrl } from "../lib/api";
+import { apiUrl, isJwtExpired, clearAdminAuth } from "../lib/api";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -13,8 +13,13 @@ export default function AdminLogin() {
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
 
-    if (token) {
+    if (token && !isJwtExpired(token)) {
       navigate("/admin");
+      return;
+    }
+
+    if (token) {
+      clearAdminAuth();
     }
   }, [navigate]);
 

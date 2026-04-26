@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
-import { apiUrl } from "../lib/api";
+import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
 
 interface CheckoutItem {
   id: number;
@@ -72,6 +72,11 @@ export default function Checkout() {
       return;
     }
 
+    if (isJwtExpired(token)) {
+      clearUserAuth();
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -88,14 +93,17 @@ export default function Checkout() {
         })),
       };
 
-      const res = await fetch(apiUrl("/api/orders"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await authFetch(
+        "/api/orders",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderData),
         },
-        body: JSON.stringify(orderData),
-      });
+        "user"
+      );
 
       if (!res.ok) throw new Error("Failed to place order");
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import AdminNavbar from "./admin/AdminNavbar";
 import AdminFooter from "./admin/AdminFooter";
-import { apiUrl } from "../lib/api";
+import { apiUrl, authFetch, isJwtExpired, clearAdminAuth } from "../lib/api";
 
 interface UploadSlot {
   file: File | null;
@@ -164,6 +164,11 @@ export default function Admin() {
   useEffect(() => {
     if (!token) {
       window.location.href = "/admin-login";
+      return;
+    }
+
+    if (isJwtExpired(token)) {
+      clearAdminAuth();
     }
   }, [token]);
 
@@ -211,11 +216,7 @@ const fetchPosters = () => {
 
   const fetchOrders = () => {
     setOrdersLoading(true);
-    fetch(apiUrl("/api/orders/recent"), {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-      },
-    })
+    authFetch("/api/orders/recent", {}, "admin")
       .then((res) => res.json())
       .then((data) => {
         const normalizedData = Array.isArray(data)
@@ -256,14 +257,7 @@ const fetchPosters = () => {
 
   const downloadCSV = async () => {
   try {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(apiUrl("/api/orders/export"), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await authFetch("/api/orders/export", { method: "GET" }, "admin");
 
     if (!res.ok) throw new Error("Download failed");
 
@@ -303,12 +297,7 @@ const fetchPosters = () => {
 };
 
   async function fetchLogs() {
-    const res = await fetch(apiUrl("/api/admin/logs"), {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-      },
-    });
-
+    const res = await authFetch("/api/admin/logs", {}, "admin");
     const data = await res.json();
     setLogs(data);
   }
@@ -421,11 +410,14 @@ const fetchPosters = () => {
           formData.append("posterId", posterId.toString());
         }
 
-        const res = await fetch(apiUrl("/api/announcement"), {
+const res = await authFetch(
+        "/api/announcement",
+        {
           method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
           body: formData,
-        });
+        },
+        "admin"
+      );
 
         if (!res.ok) throw new Error("Announcement failed");
       }
@@ -488,11 +480,14 @@ const fetchPosters = () => {
       formData.append("isPremium", String(slot.isPremium));
       formData.append("file", slot.file as File);
 
-      const res = await fetch(apiUrl("/api/posters/upload"), {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData,
-      });
+      const res = await authFetch(
+        "/api/posters/upload",
+        {
+          method: "POST",
+          body: formData,
+        },
+        "admin"
+      );
 
       const text = await res.text();
       console.log("UPLOAD RESPONSE:", text);
@@ -523,12 +518,13 @@ const fetchPosters = () => {
       }
 
       try {
-        const response = await fetch(apiUrl(`/api/posters/${id}`), {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await authFetch(
+          `/api/posters/${id}`,
+          {
+            method: "DELETE",
           },
-        });
+          "admin"
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -580,10 +576,13 @@ const fetchPosters = () => {
       toast.dismiss(toastId);
 
       try {
-        const response = await fetch(apiUrl(`/api/announcement/${id}`), {
-          method: "DELETE",
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
+        const response = await authFetch(
+          `/api/announcement/${id}`,
+          {
+            method: "DELETE",
+          },
+          "admin"
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -636,14 +635,17 @@ const fetchPosters = () => {
   const updateOrderStatus = async (id: number, newStatus: OrderStatus) => {
     setUpdatingOrderId(id);
     try {
-      const res = await fetch(apiUrl(`/api/orders/${id}/status`), {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const res = await authFetch(
+        `/api/orders/${id}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
         },
-        body: JSON.stringify({ status: newStatus }),
-      });
+        "admin"
+      );
       if (!res.ok) throw new Error("Status update failed");
       setOrders((prev) => prev.map((order) => (order.id === id ? { ...order, status: newStatus } : order)));
       toast.success(newStatus === "RECEIVED" ? "Order moved to pending" : "Order moved to delivered");

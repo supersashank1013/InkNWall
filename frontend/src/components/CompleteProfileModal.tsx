@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiUrl } from "../lib/api";
+import { apiUrl, authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
 
 interface ProfileUser {
   id: number | string;
@@ -18,17 +18,26 @@ export default function CompleteProfileModal({ user, onDone }: CompleteProfileMo
   const isPhoneLocked = Boolean(user.phone);
 
   const handleSave = async () => {
-    const res = await fetch(apiUrl(`/api/users/${user.id}`), {
-  method: "PUT",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token")}` // ⭐ ADD THIS
-  },
-  body: JSON.stringify({
-    hostel,
-    phone
-  })
-});
+    const token = localStorage.getItem("token");
+    if (!token || isJwtExpired(token)) {
+      clearUserAuth();
+      return;
+    }
+
+    const res = await authFetch(
+      `/api/users/${user.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostel,
+          phone,
+        }),
+      },
+      "user"
+    );
 
     console.log("USER ID:", user.id);
 

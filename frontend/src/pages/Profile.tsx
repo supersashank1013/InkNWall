@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-import { apiUrl } from "../lib/api";
+import { apiUrl, authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
 
 type OrderStatus = "PENDING" | "RECEIVED" | "COLLECTED";
 type OrderFilter = "PLACED" | "COLLECTED";
@@ -131,20 +131,15 @@ export default function Profile() {
     setPreview(normalizedUser.profilePic || "");
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      setOrders([]);
-      setOrdersLoading(false);
+    if (!token || isJwtExpired(token)) {
+      clearUserAuth();
       return;
     }
 
     let cancelled = false;
 
     const fetchOrders = () => {
-      fetch(apiUrl("/api/orders/my"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      authFetch("/api/orders/my", {}, "user")
         .then((res) => {
           if (!res.ok) {
             throw new Error("Failed to fetch orders");
@@ -243,18 +238,21 @@ export default function Profile() {
       imageUrl = await uploadToCloudinary(selectedFile);
     }
 
-    const res = await fetch(apiUrl(`/api/users/${user.id}`), {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token"),
+    const res = await authFetch(
+      `/api/users/${user.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostel,
+          phone: isPhoneLocked ? user.phone : phone,
+          profilePic: imageUrl, // ⭐ ONLY URL
+        }),
       },
-      body: JSON.stringify({
-        hostel,
-        phone: isPhoneLocked ? user.phone : phone,
-        profilePic: imageUrl, // ⭐ ONLY URL
-      }),
-    });
+      "user"
+    );
 
     if (!res.ok) throw new Error();
 
