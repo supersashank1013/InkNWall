@@ -453,8 +453,6 @@ const res = await authFetch(
 
   const handleUpload = async () => {
 
-  const token = localStorage.getItem("adminToken");
-
   const slotsToUpload = uploadSlots.filter(
     (slot) =>
       slot.file &&

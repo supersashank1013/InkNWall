@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-import { apiUrl, authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
+import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
 
 type OrderStatus = "PENDING" | "RECEIVED" | "COLLECTED";
 type OrderFilter = "PLACED" | "COLLECTED";

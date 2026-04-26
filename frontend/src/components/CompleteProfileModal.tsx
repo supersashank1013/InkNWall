@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiUrl, authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
+import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
 
 interface ProfileUser {
   id: number | string;
