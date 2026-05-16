@@ -76,7 +76,7 @@ declare global {
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-IN");
-const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
+const PAYMENT_REQUEST_TIMEOUT_MS = 90000;
 const RAZORPAY_OPEN_TOAST_ID = "razorpay-open";
 const RAZORPAY_CONFIRM_TOAST_ID = "razorpay-confirm";
 
@@ -176,6 +176,26 @@ export default function Checkout() {
     if (!res.ok) {
       throw new Error("Failed to place order");
     }
+
+    // try {
+    //   await authFetchWithTimeout(
+    //     "/api/mail",
+    //     {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //       },
+    //       body: JSON.stringify({
+    //         email: storedUser.email,
+    //         name: storedUser.name,
+    //         orderData,
+    //       }),
+    //     },
+    //     "Sending order confirmation email took too long."
+    //   );
+    // } catch (mailError) {
+    //   console.error("Failed to send confirmation email:", mailError);
+    // }
 
     setCart([]);
     localStorage.setItem("cart", JSON.stringify([]));
