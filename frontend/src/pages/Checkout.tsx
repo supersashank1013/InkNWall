@@ -79,6 +79,8 @@ const currencyFormatter = new Intl.NumberFormat("en-IN");
 
 const formatPrice = (amount: number) => `Rs. ${currencyFormatter.format(amount)}`;
 
+const getEnvString = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
 export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -89,7 +91,9 @@ export default function Checkout() {
   const [cart, setCart] = useState<CheckoutItem[]>(state?.cart ?? []);
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "UPI">("COD");
 
-  const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
+  const RAZORPAY_KEY_ID =
+    getEnvString(import.meta.env.VITE_RAZORPAY_KEY_ID) ||
+    getEnvString(import.meta.env.VITE_RAZORPAY_KEY);
   const user = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
 
   const itemCount = useMemo(
@@ -171,7 +175,7 @@ export default function Checkout() {
 
   const handleRazorpay = async () => {
     if (!RAZORPAY_KEY_ID) {
-      toast.error("Razorpay key is missing. Set VITE_RAZORPAY_KEY_ID in your environment.");
+      toast.error("Razorpay key is missing. Set VITE_RAZORPAY_KEY_ID in the frontend environment and redeploy.");
       return;
     }
 
