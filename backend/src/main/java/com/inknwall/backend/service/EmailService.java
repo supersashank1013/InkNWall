@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
+    public record EmailResult(boolean sent, String message) {}
+
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     @Value("${spring.mail.username:}")
@@ -25,16 +27,23 @@ public class EmailService {
 
     @Async("mailTaskExecutor")
     public void sendEmail(String to, String subject, String htmlBody) {
+        EmailResult result = sendEmailNow(to, subject, htmlBody);
+        if (result.sent()) {
+            System.out.println(result.message());
+        } else {
+            System.err.println(result.message());
+        }
+    }
+
+    public EmailResult sendEmailNow(String to, String subject, String htmlBody) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
 
         if (fromEmail == null || fromEmail.isBlank() || mailPassword == null || mailPassword.isBlank()) {
-            System.err.println("Email skipped: MAIL_USERNAME or MAIL_PASSWORD is not configured");
-            return;
+            return new EmailResult(false, "Email skipped: MAIL_USERNAME or MAIL_PASSWORD is not configured");
         }
 
         if (mailSender == null) {
-            System.err.println("Email skipped: mail sender is not configured");
-            return;
+            return new EmailResult(false, "Email skipped: mail sender is not configured");
         }
 
         try {
@@ -48,9 +57,13 @@ public class EmailService {
             helper.setFrom(fromEmail, "InkNWall");
 
             mailSender.send(message);
-            System.out.println("Order email sent to " + to);
+            return new EmailResult(true, "Email sent to " + to);
         } catch (Exception e) {
-            System.err.println("Email failed for " + to + ": " + e.getMessage());
+            Throwable root = e;
+            while (root.getCause() != null) {
+                root = root.getCause();
+            }
+            return new EmailResult(false, "Email failed for " + to + ": " + root.getMessage());
         }
     }
 }
