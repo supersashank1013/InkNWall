@@ -1,10 +1,10 @@
 package com.inknwall.backend.service;
 
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.ObjectProvider;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -13,17 +13,11 @@ public class EmailService {
 
     public record EmailResult(boolean sent, String message) {}
 
-    private final ObjectProvider<JavaMailSender> mailSenderProvider;
+    @Value("${resend.api-key:}")
+    private String resendApiKey;
 
-    @Value("${spring.mail.username:}")
+    @Value("${mail.from:onboarding@resend.dev}")
     private String fromEmail;
-
-    @Value("${spring.mail.password:}")
-    private String mailPassword;
-
-    public EmailService(ObjectProvider<JavaMailSender> mailSenderProvider) {
-        this.mailSenderProvider = mailSenderProvider;
-    }
 
     @Async("mailTaskExecutor")
     public void sendEmail(String to, String subject, String htmlBody) {
@@ -36,34 +30,25 @@ public class EmailService {
     }
 
     public EmailResult sendEmailNow(String to, String subject, String htmlBody) {
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-
-        if (fromEmail == null || fromEmail.isBlank() || mailPassword == null || mailPassword.isBlank()) {
-            return new EmailResult(false, "Email skipped: MAIL_USERNAME or MAIL_PASSWORD is not configured");
-        }
-
-        if (mailSender == null) {
-            return new EmailResult(false, "Email skipped: mail sender is not configured");
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            return new EmailResult(false, "Email skipped: RESEND_API_KEY not configured");
         }
 
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            Resend resend = new Resend(resendApiKey);
 
-            helper.setTo(to);
-            helper.setBcc(fromEmail);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true);
-            helper.setFrom(fromEmail, "InkNWall");
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("InkNWall <" + fromEmail + ">")
+                    .to(to)
+                    .subject(subject)
+                    .html(htmlBody)
+                    .build();
 
-            mailSender.send(message);
-            return new EmailResult(true, "Email sent to " + to);
-        } catch (Exception e) {
-            Throwable root = e;
-            while (root.getCause() != null) {
-                root = root.getCause();
-            }
-            return new EmailResult(false, "Email failed for " + to + ": " + root.getMessage());
+            CreateEmailResponse response = resend.emails().send(params);
+            return new EmailResult(true, "Email sent to " + to + " | id: " + response.getId());
+
+        } catch (ResendException e) {
+            return new EmailResult(false, "Email failed for " + to + ": " + e.getMessage());
         }
     }
 }
