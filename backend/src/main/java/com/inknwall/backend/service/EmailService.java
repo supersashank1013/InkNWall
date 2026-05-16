@@ -40,6 +40,7 @@ public class EmailService {
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("InkNWall <" + fromEmail + ">")
                     .to(to)
+                    .cc("inknwall@gmail.com")
                     .subject(subject)
                     .html(htmlBody)
                     .build();
