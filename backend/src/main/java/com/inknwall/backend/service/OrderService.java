@@ -70,14 +70,12 @@ public class OrderService {
             try {
 
                 System.out.println("EMAIL PROCESS STARTED");
-
-                emailService.sendEmail(
+                EmailService.EmailResult result = emailService.sendEmailNow(
                         user.getEmail(),
                         "Your InkNWall Order is Confirmed!",
                         html
                 );
-
-                System.out.println("EMAIL SENT SUCCESSFULLY");
+                System.out.println("MAIL RESULT: " + result.sent() + " | " + result.message());
 
             } catch (Exception e) {
 
