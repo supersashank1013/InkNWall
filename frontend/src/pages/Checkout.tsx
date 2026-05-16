@@ -77,6 +77,7 @@ declare global {
 
 const currencyFormatter = new Intl.NumberFormat("en-IN");
 const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
+const RAZORPAY_OPEN_TOAST_ID = "razorpay-open";
 const RAZORPAY_CONFIRM_TOAST_ID = "razorpay-confirm";
 
 const formatPrice = (amount: number) => `Rs. ${currencyFormatter.format(amount)}`;
@@ -234,6 +235,7 @@ export default function Checkout() {
 
     try {
       setLoading(true);
+      toast.loading("Opening Razorpay...", { id: RAZORPAY_OPEN_TOAST_ID });
 
       const res = await authFetchWithTimeout(
         `/api/payment/create-order?amount=${encodeURIComponent(total)}`,
@@ -295,11 +297,15 @@ export default function Checkout() {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
         setLoading(false);
+        toast.dismiss(RAZORPAY_OPEN_TOAST_ID);
         toast.error(response.error?.description || response.error?.reason || "Payment failed");
       });
       rzp.open();
+      toast.dismiss(RAZORPAY_OPEN_TOAST_ID);
+      setLoading(false);
     } catch (error) {
       console.error(error);
+      toast.dismiss(RAZORPAY_OPEN_TOAST_ID);
       toast.error((error as Error).message || "Payment failed");
       setLoading(false);
     }
