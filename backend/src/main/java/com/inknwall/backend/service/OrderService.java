@@ -67,11 +67,24 @@ public class OrderService {
             String itemsHtml = buildItemsHtml(savedOrder);
             String html = buildConfirmationHtml(user, savedOrder, itemsHtml);
 
-            emailService.sendEmail(
-                    user.getEmail(),
-                    "Your InkNWall Order is Confirmed!",
-                    html
-            );
+            try {
+
+                System.out.println("EMAIL PROCESS STARTED");
+
+                emailService.sendEmail(
+                        user.getEmail(),
+                        "Your InkNWall Order is Confirmed!",
+                        html
+                );
+
+                System.out.println("EMAIL SENT SUCCESSFULLY");
+
+            } catch (Exception e) {
+
+                System.out.println("EMAIL SENDING FAILED");
+
+                e.printStackTrace();
+            }
         }
 
         return savedOrder;
