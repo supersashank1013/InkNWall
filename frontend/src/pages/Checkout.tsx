@@ -24,6 +24,57 @@ interface StoredUser {
   phone?: string;
 }
 
+interface RazorpayOrderResponse {
+  id: string;
+  amount: number;
+  currency?: string;
+}
+
+interface RazorpaySuccessResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayFailureResponse {
+  error?: {
+    description?: string;
+    reason?: string;
+  };
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpaySuccessResponse) => void;
+  prefill: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal: {
+    ondismiss: () => void;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: "payment.failed", handler: (response: RazorpayFailureResponse) => void) => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
 const currencyFormatter = new Intl.NumberFormat("en-IN");
 
 const formatPrice = (amount: number) => `Rs. ${currencyFormatter.format(amount)}`;
@@ -38,6 +89,7 @@ export default function Checkout() {
   const [cart, setCart] = useState<CheckoutItem[]>(state?.cart ?? []);
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "UPI">("COD");
 
+  const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
   const user = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
 
   const itemCount = useMemo(
@@ -55,8 +107,78 @@ export default function Checkout() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  const placeOrder = async () => {
-    if (loading) return;
+  const submitOrder = async (paymentDetails?: RazorpaySuccessResponse) => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const orderData = {
+      address: storedUser.hostel,
+      total,
+      paymentMethod,
+      paymentStatus: paymentMethod === "UPI" ? "PAID" : "PENDING",
+      razorpayOrderId: paymentDetails?.razorpay_order_id,
+      razorpayPaymentId: paymentDetails?.razorpay_payment_id,
+      razorpaySignature: paymentDetails?.razorpay_signature,
+      items: cart.map((item) => ({
+        posterId: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.img,
+      })),
+    };
+
+    const res = await authFetch(
+      "/api/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      },
+      "user"
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to place order");
+    }
+
+    setCart([]);
+    localStorage.setItem("cart", JSON.stringify([]));
+    setSuccess(true);
+  };
+
+  const verifyPayment = async (response: RazorpaySuccessResponse) => {
+    const res = await authFetch(
+      "/api/payment/verify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(response),
+      },
+      "user"
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(body || "Payment verification failed");
+    }
+
+    await submitOrder(response);
+    toast.success("Payment successful");
+  };
+
+  const handleRazorpay = async () => {
+    if (!RAZORPAY_KEY_ID) {
+      toast.error("Razorpay key is missing. Set VITE_RAZORPAY_KEY_ID in your environment.");
+      return;
+    }
+
+    if (!window.Razorpay) {
+      toast.error("Razorpay checkout could not be loaded. Please refresh and try again.");
+      return;
+    }
 
     const storedUser = JSON.parse(localStorage.getItem("user") || "null");
     const token = localStorage.getItem("token");
@@ -80,36 +202,72 @@ export default function Checkout() {
     try {
       setLoading(true);
 
-      const orderData = {
-        address: storedUser.hostel,
-        total,
-        paymentMethod,
-        items: cart.map((item) => ({
-          posterId: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          image: item.img,
-        })),
-      };
-
       const res = await authFetch(
-        "/api/orders",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderData),
-        },
+        `/api/payment/create-order?amount=${encodeURIComponent(total)}`,
+        { method: "POST" },
         "user"
       );
 
-      if (!res.ok) throw new Error("Failed to place order");
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || "Failed to create Razorpay order");
+      }
 
-      setCart([]);
-      localStorage.setItem("cart", JSON.stringify([]));
-      setSuccess(true);
+      const data = (await res.json()) as RazorpayOrderResponse;
+
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency || "INR",
+        name: "InkNWall",
+        description: "Poster Purchase",
+        order_id: data.id,
+        handler: async function (response: RazorpaySuccessResponse) {
+          try {
+            await verifyPayment(response);
+          } catch (error) {
+            toast.error((error as Error).message || "Payment verification failed");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: storedUser.name,
+          email: storedUser.email,
+          contact: storedUser.phone,
+        },
+        theme: {
+          color: "#f97316",
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", (response) => {
+        setLoading(false);
+        toast.error(response.error?.description || response.error?.reason || "Payment failed");
+      });
+      rzp.open();
+    } catch (error) {
+      console.error(error);
+      toast.error((error as Error).message || "Payment failed");
+      setLoading(false);
+    }
+  };
+
+  const placeOrder = async () => {
+    if (loading) return;
+    if (paymentMethod === "UPI") {
+      await handleRazorpay();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await submitOrder();
+      toast.success("Order placed successfully");
     } catch {
       toast.error("Payment failed");
     } finally {
@@ -345,20 +503,34 @@ export default function Checkout() {
                   </div>
                 </button>
 
-                <div className="rounded-[24px] border border-white/10 bg-black/20 p-5 opacity-65">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("UPI")}
+                  className={`group rounded-[24px] border p-5 text-left transition-all duration-300 ${
+                    paymentMethod === "UPI"
+                      ? "border-orange-400/60 bg-orange-500/10 shadow-[0_0_0_1px_rgba(255,95,31,0.35)]"
+                      : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.04]"
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-lg font-semibold text-white">Online Payment (UPI)</p>
-                      <p className="mt-2 text-sm leading-6 text-gray-400">
-                        Online payments are planned next. For now, checkout stays simple with cash on delivery.
+                      <p className="mt-2 text-sm leading-6 text-gray-300">
+                        Pay securely with Razorpay and complete your order immediately.
                       </p>
                     </div>
 
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
-                      Soon
-                    </span>
+                    <div
+                      className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                        paymentMethod === "UPI"
+                          ? "border-orange-300 bg-orange-500/20 text-orange-200"
+                          : "border-white/20 bg-transparent text-transparent"
+                      }`}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                    </div>
                   </div>
-                </div>
+                </button>
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -477,7 +649,15 @@ export default function Checkout() {
                   className="mt-5 group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-[24px] bg-orange-600 px-6 py-4 text-base font-bold text-white shadow-[0_20px_50px_rgba(255,95,31,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                 >
                   <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0 transition duration-700 group-hover:translate-x-[100%] group-hover:opacity-100" />
-                  <span className="relative z-10">{loading ? "Placing Order..." : "Confirm Order"}</span>
+                  <span className="relative z-10">
+                    {loading
+                      ? paymentMethod === "UPI"
+                        ? "Processing payment..."
+                        : "Placing Order..."
+                      : paymentMethod === "UPI"
+                      ? "Pay with Razorpay"
+                      : "Confirm Order"}
+                  </span>
                   {!loading && <span className="relative z-10 text-lg">&rarr;</span>}
                 </button>
 

@@ -33,6 +33,9 @@ public class Order {
 
     private String paymentMethod; // COD
     private String paymentStatus; // PENDING / PAID
+    private String razorpayOrderId;
+    private String razorpayPaymentId;
+    private String razorpaySignature;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,10 +59,21 @@ public class Order {
 
     @PrePersist
     public void setCreatedAt() {
-        this.createdAt = LocalDateTime.now();
-        this.status = Status.PENDING;
-        this.paymentMethod = "COD";
-        this.paymentStatus = "PENDING";
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+
+        if (this.status == null) {
+            this.status = Status.PENDING;
+        }
+
+        if (this.paymentMethod == null || this.paymentMethod.isBlank()) {
+            this.paymentMethod = "COD";
+        }
+
+        if (this.paymentStatus == null || this.paymentStatus.isBlank()) {
+            this.paymentStatus = "PENDING";
+        }
     }
 
 

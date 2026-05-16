@@ -41,6 +41,7 @@ public class SecurityConfig {
 
                         // Protected
                         .requestMatchers("/api/orders/**").authenticated()
+                        .requestMatchers("/api/payment/**").authenticated()
                         .requestMatchers("/api/posters/upload").authenticated()
                         .requestMatchers("/api/admin/**").authenticated()
 

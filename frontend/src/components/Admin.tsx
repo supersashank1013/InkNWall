@@ -26,6 +26,15 @@ interface Log {
   timestamp: string;
 }
 
+interface Announcement {
+  id: number;
+  message: string;
+}
+
+interface LegacyNavigator extends Navigator {
+  msSaveOrOpenBlob?: (blob: Blob, defaultName?: string) => boolean;
+}
+
 interface OrderItem {
   posterId?: number;
   name?: string;
@@ -133,7 +142,7 @@ export default function Admin() {
   const [adminUsername, setAdminUsername] = useState("Admin");
   const [logs, setLogs] = useState<Log[]>([]);
   const [logAdminFilter, setLogAdminFilter] = useState("ALL");
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   const selectedPosterPreviews = posters.filter((poster) => selectedPosters.includes(poster.id));
   const announcementPreviewText = announcement.trim();
@@ -264,8 +273,9 @@ const fetchPosters = () => {
     const blob = await res.blob();
 
     // Handle IE/Edge
-    if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
-      (window.navigator as any).msSaveOrOpenBlob(blob, "orders.csv");
+    const legacyNavigator = window.navigator as LegacyNavigator;
+    if (legacyNavigator.msSaveOrOpenBlob) {
+      legacyNavigator.msSaveOrOpenBlob(blob, "orders.csv");
       return;
     }
 
