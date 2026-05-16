@@ -76,10 +76,17 @@ declare global {
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-IN");
+const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
+const RAZORPAY_CONFIRM_TOAST_ID = "razorpay-confirm";
 
 const formatPrice = (amount: number) => `Rs. ${currencyFormatter.format(amount)}`;
 
 const getEnvString = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+const isAbortError = (error: unknown) => error instanceof DOMException && error.name === "AbortError";
+
+const hasRazorpayPaymentDetails = (response: RazorpaySuccessResponse) =>
+  Boolean(response.razorpay_payment_id && response.razorpay_order_id && response.razorpay_signature);
 
 export default function Checkout() {
   const [loading, setLoading] = useState(false);
@@ -111,6 +118,27 @@ export default function Checkout() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
+  const authFetchWithTimeout = async (
+    path: string,
+    init: RequestInit,
+    timeoutMessage: string
+  ) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), PAYMENT_REQUEST_TIMEOUT_MS);
+
+    try {
+      return await authFetch(path, { ...init, signal: controller.signal }, "user");
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(timeoutMessage);
+      }
+
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
   const submitOrder = async (paymentDetails?: RazorpaySuccessResponse) => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "null");
     const orderData = {
@@ -130,7 +158,7 @@ export default function Checkout() {
       })),
     };
 
-    const res = await authFetch(
+    const res = await authFetchWithTimeout(
       "/api/orders",
       {
         method: "POST",
@@ -139,7 +167,9 @@ export default function Checkout() {
         },
         body: JSON.stringify(orderData),
       },
-      "user"
+      paymentDetails
+        ? "Payment verified, but saving the order took too long. Check your profile before retrying."
+        : "Saving the order took too long. Please try again."
     );
 
     if (!res.ok) {
@@ -152,7 +182,7 @@ export default function Checkout() {
   };
 
   const verifyPayment = async (response: RazorpaySuccessResponse) => {
-    const res = await authFetch(
+    const res = await authFetchWithTimeout(
       "/api/payment/verify",
       {
         method: "POST",
@@ -161,7 +191,7 @@ export default function Checkout() {
         },
         body: JSON.stringify(response),
       },
-      "user"
+      "Razorpay payment succeeded, but verification took too long. Please check your profile before retrying."
     );
 
     if (!res.ok) {
@@ -170,7 +200,6 @@ export default function Checkout() {
     }
 
     await submitOrder(response);
-    toast.success("Payment successful");
   };
 
   const handleRazorpay = async () => {
@@ -206,10 +235,10 @@ export default function Checkout() {
     try {
       setLoading(true);
 
-      const res = await authFetch(
+      const res = await authFetchWithTimeout(
         `/api/payment/create-order?amount=${encodeURIComponent(total)}`,
         { method: "POST" },
-        "user"
+        "Creating the Razorpay order took too long. Please try again."
       );
 
       if (!res.ok) {
@@ -227,10 +256,25 @@ export default function Checkout() {
         description: "Poster Purchase",
         order_id: data.id,
         handler: async function (response: RazorpaySuccessResponse) {
+          setLoading(true);
+
           try {
+            if (!hasRazorpayPaymentDetails(response)) {
+              throw new Error("Razorpay did not return complete payment details.");
+            }
+
+            console.info("Razorpay payment success received", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+            });
+
+            toast.loading("Confirming payment...", { id: RAZORPAY_CONFIRM_TOAST_ID });
             await verifyPayment(response);
+            toast.success("Payment successful", { id: RAZORPAY_CONFIRM_TOAST_ID });
           } catch (error) {
-            toast.error((error as Error).message || "Payment verification failed");
+            toast.error((error as Error).message || "Payment verification failed", {
+              id: RAZORPAY_CONFIRM_TOAST_ID,
+            });
           } finally {
             setLoading(false);
           }
