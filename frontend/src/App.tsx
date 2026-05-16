@@ -235,20 +235,7 @@ function HomePage() {
       <div className="pointer-events-none fixed -right-16 bottom-8 z-0 h-80 w-80 rounded-full bg-cyan-500/5 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0)_20%,rgba(255,255,255,0)_100%)]" />
 
-      <Toaster
-        position="top-left"
-        gutter={12}
-        toastOptions={{
-          duration: 2500,
-          style: {
-            background: "#111",
-            color: "#fff",
-            border: "1px solid #FF5F1F",
-            padding: "12px 16px",
-            fontSize: "13px",
-          },
-        }}
-      />
+      {/* Single Toaster is mounted at the top of App to avoid duplicate toasts */}
 
       <div className="relative z-20">
         <Navbar
