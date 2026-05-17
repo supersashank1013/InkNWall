@@ -35,8 +35,8 @@ public class BackendApplication {
 				a3.setPassword(encoder.encode("Velocity123"));
 
 				Admin a4 = new Admin();
-				a4.setEmail("notTanishqGamer");
-				a4.setPassword(encoder.encode("Gamerz123."));
+				a4.setEmail("notTanishq");
+				a4.setPassword(encoder.encode("2006tanishq"));
 
 				repo.save(a1);
 				repo.save(a2);
