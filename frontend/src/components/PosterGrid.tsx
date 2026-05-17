@@ -125,7 +125,8 @@ export default function PosterGrid({
       <section
         id="shop"
         ref={shopRef}
-        className="space-y-4 rounded-[26px] border border-white/10 bg-[#0b0b0b]/82 px-3 py-4 shadow-[0_28px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:space-y-6 sm:rounded-[32px] sm:px-5 sm:py-6 lg:px-6 lg:py-8"
+        // className="space-y-4 rounded-[26px] border border-white/10 bg-[#0b0b0b]/82 px-3 py-4 shadow-[0_28px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:space-y-6 sm:rounded-[32px] sm:px-5 sm:py-6 lg:px-6 lg:py-8"
+        className="space-y-4 sm:space-y-6"
       >
         <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -189,6 +190,7 @@ export default function PosterGrid({
 
               <button
                 type="button"
+                aria-label={`Preview ${p.name}`}
                 className="relative mb-3 aspect-[3/4] w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#050505] text-left sm:mb-4 sm:rounded-[18px]"
                 onClick={() => openModal(p.img)}
               >
@@ -241,6 +243,7 @@ export default function PosterGrid({
                     <div className="flex items-center gap-1 self-start rounded-2xl border border-white/10 bg-[#1A1A1A]/90 p-1 shadow-inner backdrop-blur-xl sm:self-auto">
                       <button
                         onClick={() => decrease(p.id)}
+                        aria-label={`Decrease quantity of ${p.name}`}
                         className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
                       >
                         <Minus className="h-4 w-4" />
@@ -252,6 +255,7 @@ export default function PosterGrid({
 
                       <button
                         onClick={() => increase(p.id)}
+                        aria-label={`Increase quantity of ${p.name}`}
                         className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
                       >
                         <Plus className="h-4 w-4" />

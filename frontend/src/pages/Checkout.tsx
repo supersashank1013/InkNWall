@@ -18,10 +18,13 @@ interface CheckoutState {
 }
 
 interface StoredUser {
+  id?: number;
   name?: string;
   email?: string;
   hostel?: string;
   phone?: string;
+  profilePic?: string;
+  roll?: string;
 }
 
 interface RazorpayOrderResponse {
@@ -102,7 +105,58 @@ export default function Checkout() {
   const RAZORPAY_KEY_ID =
     getEnvString(import.meta.env.VITE_RAZORPAY_KEY_ID) ||
     getEnvString(import.meta.env.VITE_RAZORPAY_KEY);
-  const user = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
+
+  const [user, setUser] = useState<StoredUser | null>(
+    JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null
+  );
+
+  // Inline edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editHostel, setEditHostel] = useState(user?.hostel || "");
+  const [editPhone, setEditPhone] = useState(user?.phone || "");
+  const [savingDetails, setSavingDetails] = useState(false);
+
+  const saveDeliveryDetails = async () => {
+    if (!editHostel.trim() || !editPhone.trim()) {
+      toast.error("Hostel and phone are required");
+      return;
+    }
+    if (!user?.id) {
+      toast.error("User not found");
+      return;
+    }
+    setSavingDetails(true);
+    try {
+      const res = await authFetchWithTimeout(
+        `/api/users/${user.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hostel: editHostel.trim(),
+            phone: editPhone.trim(),
+            profilePic: user.profilePic,
+          }),
+        },
+        "Saving details took too long. Please try again."
+      );
+      if (!res.ok) throw new Error("Failed to save details");
+      const updated = await res.json();
+      const updatedUser = {
+        ...updated,
+        profilePic: user.profilePic,
+        roll: updated.roll?.toLowerCase?.() ?? updated.roll,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setIsEditing(false);
+      toast.success("Delivery details updated!");
+    } catch {
+      toast.error("Failed to save details. Try again.");
+    } finally {
+      setSavingDetails(false);
+    }
+  };
 
   const itemCount = useMemo(
     () => cart.reduce((sum, item) => sum + item.quantity, 0),
@@ -352,19 +406,23 @@ export default function Checkout() {
   if (success) {
     return (
       <div className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-[#060606] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,95,31,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_28%)]" />
-        <div className="absolute left-10 top-16 h-52 w-52 rounded-full bg-orange-500/[0.14] blur-3xl" />
-        <div className="absolute bottom-12 right-10 h-60 w-60 rounded-full bg-white/[0.06] blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,95,31,0.15),transparent_60%)]" />
+        <div className="absolute left-1/2 top-0 h-px w-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
 
-        <div className="relative z-10 w-full max-w-xl rounded-[32px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_30px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+        <div className="relative z-10 w-full max-w-lg text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-orange-500/30 bg-orange-500/10">
+            <svg className="h-7 w-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-400">
             Order Confirmed
           </p>
-          <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-            Order Placed
+          <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
+            You're all set.
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-gray-300 sm:text-base">
-            Your posters will be delivered soon. Check out your Mail and Profile to track your Order.
+          <p className="mx-auto mt-4 max-w-sm text-sm leading-7 text-gray-400">
+            Your posters are on their way. Check your email and profile to track the delivery.
           </p>
 
           <button
@@ -373,9 +431,10 @@ export default function Checkout() {
               localStorage.setItem("cart", JSON.stringify([]));
               navigate("/", { replace: true, state: { cart: [], openCart: false } });
             }}
-            className="mt-8 w-full rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-500 active:scale-95 sm:w-auto"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-orange-600 px-8 py-3 text-sm font-semibold text-white transition hover:bg-orange-500 active:scale-95"
           >
             Continue Shopping
+            <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>
@@ -385,34 +444,35 @@ export default function Checkout() {
   if (cart.length === 0) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#060606] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,95,31,0.16),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.07),transparent_30%)]" />
-        <div className="absolute left-10 top-16 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="absolute bottom-12 right-10 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,95,31,0.12),transparent_55%)]" />
 
-        <div className="relative mx-auto flex min-h-[80vh] max-w-3xl items-center justify-center">
-          <div className="w-full rounded-[32px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:p-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
-              Checkout
-            </p>
-            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-              Your cart is waiting for its first poster.
+        <div className="relative mx-auto flex min-h-[80vh] max-w-lg items-center justify-center">
+          <div className="w-full text-center">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-500">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-400">Checkout</p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              Your cart is empty.
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-300 sm:text-base">
-              Add a few prints you love, then come back here for the final glow-up before placing your order.
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-gray-500">
+              Add some prints you love and come back to complete your order.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 type="button"
                 onClick={() => navigate("/", { state: { cart, openCart: true } })}
-                className="rounded-2xl bg-orange-600 px-6 py-3 font-semibold text-white transition hover:bg-orange-500"
+                className="rounded-full bg-orange-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-orange-500 active:scale-95"
               >
                 Browse Posters
               </button>
               <button
                 type="button"
                 onClick={() => navigate("/", { state: { cart, openCart: true } })}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3 font-semibold text-gray-200 transition hover:border-white/20 hover:bg-white/[0.07]"
+                className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-gray-300 transition hover:border-white/20 hover:bg-white/[0.07]"
               >
                 Go Back
               </button>
@@ -424,155 +484,184 @@ export default function Checkout() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#060606] px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,95,31,0.14),transparent_30%),radial-gradient(circle_at_85%_18%,rgba(255,255,255,0.08),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(255,95,31,0.1),transparent_28%)]" />
-      <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-orange-500/[0.12] blur-[120px]" />
-      <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-white/[0.06] blur-[140px]" />
-      <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-orange-300/[0.08] blur-[120px]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#060606] px-4 py-6 text-white sm:px-6 sm:py-10 lg:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,95,31,0.1),transparent_50%)]" />
+      <div className="absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => navigate("/", { state: { cart, openCart: true } })}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-gray-300 transition hover:border-orange-400/40 hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 transition hover:text-white"
           >
-            <span aria-hidden="true">&larr;</span>
-            <span>Back to cart</span>
+            <span aria-hidden="true">←</span>
+            <span>Back</span>
           </button>
 
-          <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-orange-200">
-            Secure campus checkout
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <svg className="h-3.5 w-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Secure checkout
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-6">
-            <div
-              className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-8"
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, rgba(255,95,31,0.12), rgba(255,255,255,0.03) 55%, rgba(255,95,31,0.05))",
-              }}
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
-                    Final Step
-                  </p>
-                  <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl lg:text-[2.8rem]">
-                    Give your order the finish it deserves.
-                  </h1>
-                  <p className="mt-4 max-w-xl text-sm leading-7 text-gray-200 sm:text-base">
-                    Clean details, campus-friendly delivery, and a polished summary before your posters start their trip to the wall.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[340px]">
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.22em] text-gray-400">Items</p>
-                    <p className="mt-2 text-2xl font-black text-white">{itemCount}</p>
-                    <p className="mt-1 text-xs text-gray-400">Ready to print</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.22em] text-gray-400">Payment</p>
-                    <p className="mt-2 text-lg font-bold text-white">Cash on Delivery</p>
-                    <p className="mt-1 text-xs text-gray-400">Pay when collected</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.22em] text-gray-400">Drop</p>
-                    <p className="mt-2 text-lg font-bold text-white">Campus delivery</p>
-                    <p className="mt-1 text-xs text-gray-400">No extra delivery fee</p>
-                  </div>
-                </div>
-              </div>
+            <div className="border-b border-white/[0.06] pb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-400">
+                Final Step
+              </p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                Review & Place Order
+              </h1>
+              <p className="mt-2 text-sm text-gray-500">
+                Confirm your details below before locking in your order.
+              </p>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-7">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
                     Delivery Details
                   </p>
-                  <h2 className="mt-2 text-2xl font-bold text-white">Where should we send it?</h2>
+                  <h2 className="mt-1 text-xl font-bold text-white">Where should we send it?</h2>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate("/profile")}
-                  className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-orange-400/40 hover:bg-white/[0.07]"
-                >
-                  Edit profile
-                </button>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditHostel(user?.hostel || "");
+                      setEditPhone(user?.phone || "");
+                      setIsEditing(true);
+                    }}
+                    className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-medium text-gray-400 transition hover:border-orange-400/40 hover:text-white"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Customer</p>
-                  <p className="mt-3 text-lg font-semibold text-white">{user?.name || "Guest User"}</p>
-                  <p className="mt-1 text-sm text-gray-400">{user?.email || "Sign in required"}</p>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-gray-600">Customer</p>
+                  <p className="mt-2 text-base font-semibold text-white">{user?.name || "Guest User"}</p>
+                  <p className="mt-0.5 text-sm text-gray-500">{user?.email || "Sign in required"}</p>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Status</p>
-                  <p className={`mt-3 text-lg font-semibold ${profileComplete ? "text-emerald-300" : "text-amber-300"}`}>
-                    {profileComplete ? "Ready for delivery" : "Profile needs one more step"}
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-gray-600">Status</p>
+                  <p className={`mt-2 text-base font-semibold ${profileComplete ? "text-emerald-400" : "text-amber-400"}`}>
+                    {profileComplete ? "Ready for delivery" : "Profile incomplete"}
                   </p>
-                  <p className="mt-1 text-sm text-gray-400">
+                  <p className="mt-0.5 text-sm text-gray-500">
                     {profileComplete
-                      ? "Your hostel and phone are available for handoff."
-                      : "Add your hostel and phone before placing the order."}
+                      ? "Hostel and phone confirmed."
+                      : "Add hostel and phone to continue."}
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-5 md:col-span-2">
-                  <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Hostel and room</p>
-                  <p className="mt-3 text-base font-medium text-white">
-                    {user?.hostel || "No hostel details saved yet"}
-                  </p>
-                </div>
+                {isEditing ? (
+                  <>
+                    <div className="rounded-xl border border-orange-500/30 bg-black/30 p-4 md:col-span-2">
+                      <label className="text-[10px] uppercase tracking-[0.22em] text-gray-600">
+                        Hostel & Room
+                      </label>
+                      <input
+                        type="text"
+                        value={editHostel}
+                        onChange={(e) => setEditHostel(e.target.value)}
+                        placeholder="e.g. Alakananda, Room 204"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-orange-500/50"
+                      />
+                    </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-5 md:col-span-2">
-                  <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Phone number</p>
-                  <p className="mt-3 text-base font-medium text-white">
-                    {user?.phone || "No phone number saved yet"}
-                  </p>
-                </div>
+                    <div className="rounded-xl border border-orange-500/30 bg-black/30 p-4 md:col-span-2">
+                      <label className="text-[10px] uppercase tracking-[0.22em] text-gray-600">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-orange-500/50"
+                      />
+                    </div>
+
+                    <div className="flex gap-3 md:col-span-2">
+                      <button
+                        type="button"
+                        onClick={saveDeliveryDetails}
+                        disabled={savingDetails}
+                        className="flex-1 rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:opacity-50"
+                      >
+                        {savingDetails ? "Saving..." : "Save Details"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-gray-400 transition hover:text-white"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 md:col-span-2">
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-gray-600">Hostel & Room</p>
+                      <p className="mt-2 text-base font-medium text-white">
+                        {user?.hostel || "No hostel details saved yet"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 md:col-span-2">
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-gray-600">Phone Number</p>
+                      <p className="mt-2 text-base font-medium text-white">
+                        {user?.phone || "No phone number saved yet"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
                 Payment Method
               </p>
-              <h2 className="mt-2 text-2xl font-bold text-white">Choose how you want to pay</h2>
+              <h2 className="mt-1 text-xl font-bold text-white">How do you want to pay?</h2>
 
-              <div className="mt-6 grid gap-4">
+              <div className="mt-5 grid gap-3">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("COD")}
-                  className={`group rounded-[24px] border p-5 text-left transition-all duration-300 ${
+                  className={`rounded-xl border p-4 text-left transition-all duration-200 ${
                     paymentMethod === "COD"
-                      ? "border-orange-400/60 bg-orange-500/10 shadow-[0_0_0_1px_rgba(255,95,31,0.35)]"
-                      : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.04]"
+                      ? "border-orange-500/40 bg-orange-500/[0.08]"
+                      : "border-white/[0.06] bg-black/20 hover:border-white/15"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-lg font-semibold text-white">Cash on Delivery</p>
-                      <p className="mt-2 text-sm leading-6 text-gray-300">
-                        The easiest option for campus pickup. Place the order now and pay when you collect it.
+                      <p className="text-sm font-semibold text-white">Cash on Delivery</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Pay when you collect your order on campus.
                       </p>
                     </div>
 
                     <div
-                      className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                         paymentMethod === "COD"
-                          ? "border-orange-300 bg-orange-500/20 text-orange-200"
-                          : "border-white/20 bg-transparent text-transparent"
+                          ? "border-orange-400 bg-orange-500/20"
+                          : "border-white/20 bg-transparent"
                       }`}
                     >
-                      <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                      {paymentMethod === "COD" && <span className="h-2 w-2 rounded-full bg-orange-400" />}
                     </div>
                   </div>
                 </button>
@@ -580,50 +669,50 @@ export default function Checkout() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("UPI")}
-                  className={`group rounded-[24px] border p-5 text-left transition-all duration-300 ${
+                  className={`rounded-xl border p-4 text-left transition-all duration-200 ${
                     paymentMethod === "UPI"
-                      ? "border-orange-400/60 bg-orange-500/10 shadow-[0_0_0_1px_rgba(255,95,31,0.35)]"
-                      : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.04]"
+                      ? "border-orange-500/40 bg-orange-500/[0.08]"
+                      : "border-white/[0.06] bg-black/20 hover:border-white/15"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-lg font-semibold text-white">Online Payment (UPI)</p>
-                      <p className="mt-2 text-sm leading-6 text-gray-300">
-                        Pay securely with Razorpay and complete your order immediately.
+                      <p className="text-sm font-semibold text-white">Online Payment (UPI)</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Pay securely with Razorpay — instant confirmation.
                       </p>
                     </div>
 
                     <div
-                      className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                         paymentMethod === "UPI"
-                          ? "border-orange-300 bg-orange-500/20 text-orange-200"
-                          : "border-white/20 bg-transparent text-transparent"
+                          ? "border-orange-400 bg-orange-500/20"
+                          : "border-white/20 bg-transparent"
                       }`}
                     >
-                      <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                      {paymentMethod === "UPI" && <span className="h-2 w-2 rounded-full bg-orange-400" />}
                     </div>
                   </div>
                 </button>
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-sm font-semibold text-white">Packed with care</p>
-                  <p className="mt-2 text-xs leading-6 text-gray-400">
-                    Posters stay safe from checkout to collection.
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                  <p className="text-xs font-semibold text-white">Packed with care</p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Safe from checkout to collection.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-sm font-semibold text-white">Fast campus flow</p>
-                  <p className="mt-2 text-xs leading-6 text-gray-400">
-                    Your saved hostel details keep the handoff easy.
+                <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                  <p className="text-xs font-semibold text-white">Fast campus flow</p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Hostel details keep handoff easy.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-sm font-semibold text-white">Order confidence</p>
-                  <p className="mt-2 text-xs leading-6 text-gray-400">
-                    Review everything once before you lock it in.
+                <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                  <p className="text-xs font-semibold text-white">Order confidence</p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Review everything before you confirm.
                   </p>
                 </div>
               </div>
@@ -631,86 +720,67 @@ export default function Checkout() {
           </section>
 
           <aside className="space-y-6 xl:sticky xl:top-8 xl:self-start">
-            <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.05] shadow-[0_30px_90px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
-              <div
-                className="border-b border-white/10 px-6 py-6 sm:px-8"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(180deg, rgba(255,95,31,0.12) 0%, rgba(255,255,255,0.02) 100%)",
-                }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-300">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+              <div className="border-b border-white/[0.06] px-6 py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
                   Order Summary
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Your wall haul</h2>
-                <p className="mt-2 text-sm text-gray-300">
-                  {itemCount} item{itemCount > 1 ? "s" : ""} lined up for checkout.
+                <h2 className="mt-1 text-xl font-bold text-white">Your wall haul</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {itemCount} item{itemCount > 1 ? "s" : ""} ready for checkout.
                 </p>
               </div>
 
-              <div className="space-y-4 px-6 py-6 sm:px-8">
+              <div className="space-y-3 px-6 py-5">
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="group rounded-[24px] border border-white/10 bg-black/20 p-4 transition-all duration-300 hover:border-orange-400/30 hover:bg-white/[0.04]"
+                    className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-black/20 p-3"
                   >
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        className="h-24 w-[4.5rem] rounded-2xl object-cover shadow-lg shadow-black/30"
-                      />
+                    <img
+                      src={item.img}
+                      alt={item.name}
+                      className="h-20 w-14 rounded-lg object-cover"
+                    />
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-base font-semibold text-white">{item.name}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-orange-200/70">
-                              {item.cat || "Poster"}
-                            </p>
-                          </div>
-
-                          <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-gray-200">
-                            x{item.quantity}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex items-end justify-between gap-3">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Unit price</p>
-                            <p className="mt-1 text-sm text-gray-300">{formatPrice(item.price)}</p>
-                          </div>
-
-                          <div className="text-right">
-                            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Line total</p>
-                            <p className="mt-1 text-lg font-bold text-orange-300">
-                              {formatPrice(item.price * item.quantity)}
-                            </p>
-                          </div>
-                        </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="truncate text-sm font-semibold text-white">{item.name}</p>
+                        <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-gray-400">
+                          ×{item.quantity}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
+                        {item.cat || "Poster"}
+                      </p>
+                      <div className="mt-3 flex items-end justify-between">
+                        <p className="text-xs text-gray-600">{formatPrice(item.price)} each</p>
+                        <p className="text-sm font-bold text-orange-300">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-white/10 px-6 py-6 sm:px-8">
-                <div className="space-y-3 rounded-[24px] border border-white/10 bg-black/25 p-5">
-                  <div className="flex items-center justify-between text-sm text-gray-300">
+              <div className="border-t border-white/[0.06] px-6 py-5">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Subtotal</span>
                     <span>{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-300">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Delivery</span>
-                    <span className="text-emerald-300">Free</span>
+                    <span className="text-emerald-400">Free</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-300">
-                    <span>Payment mode</span>
-                    <span>{paymentMethod === "COD" ? "Cash on Delivery" : "Online Payment (UPI)"}</span>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>Payment</span>
+                    <span>{paymentMethod === "COD" ? "Cash on Delivery" : "UPI"}</span>
                   </div>
-                  <div className="border-t border-white/10 pt-3">
+                  <div className="border-t border-white/[0.06] pt-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-base font-semibold text-white">Total</span>
+                      <span className="text-sm font-semibold text-white">Total</span>
                       <span className="text-2xl font-black text-white">{formatPrice(total)}</span>
                     </div>
                   </div>
@@ -720,9 +790,9 @@ export default function Checkout() {
                   type="button"
                   disabled={loading}
                   onClick={placeOrder}
-                  className="mt-5 group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-[24px] bg-orange-600 px-6 py-4 text-base font-bold text-white shadow-[0_20px_50px_rgba(255,95,31,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                  className="mt-5 group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-orange-600 px-6 py-4 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                 >
-                  <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0 transition duration-700 group-hover:translate-x-[100%] group-hover:opacity-100" />
+                  <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition duration-500 group-hover:translate-x-[100%] group-hover:opacity-100" />
                   <span className="relative z-10">
                     {loading
                       ? paymentMethod === "UPI"
@@ -732,11 +802,11 @@ export default function Checkout() {
                       ? "Pay with Razorpay"
                       : "Confirm Order"}
                   </span>
-                  {!loading && <span className="relative z-10 text-lg">&rarr;</span>}
+                  {!loading && <span className="relative z-10">→</span>}
                 </button>
 
-                <p className="mt-4 text-center text-xs leading-6 text-gray-400">
-                  By confirming, you are reserving these posters for campus delivery using the saved profile details above.
+                <p className="mt-3 text-center text-xs text-gray-600">
+                  By confirming, you're reserving these posters for campus delivery.
                 </p>
               </div>
             </div>

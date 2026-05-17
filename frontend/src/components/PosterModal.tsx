@@ -71,6 +71,7 @@ export default function PosterModal({
           e.stopPropagation();
           handleClose();
         }}
+        aria-label={"Close poster preview"}
         className={`absolute top-6 right-6 cursor-pointer text-3xl text-gray-500 transition-all duration-300 hover:rotate-90 hover:text-white md:top-10 md:right-10 ${
           show ? "opacity-100 scale-100" : "opacity-0 scale-75"
         }`}

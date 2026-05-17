@@ -96,7 +96,7 @@ export default function Navbar({
     setSearch(term);
     saveSearch(term);
     setIsFocused(false);
-    
+
     const shopSection = document.getElementById("shop");
     if (shopSection) {
       const targetPosition = shopSection.getBoundingClientRect().top + window.scrollY - getShopOffset();
@@ -108,7 +108,7 @@ export default function Navbar({
     if (e.key === "Enter") {
       saveSearch(search);
       setIsFocused(false);
-      
+
       const shopSection = document.getElementById("shop");
       if (shopSection) {
         const targetPosition = shopSection.getBoundingClientRect().top + window.scrollY - getShopOffset();
@@ -134,8 +134,8 @@ export default function Navbar({
 
   const filteredPosters = query
     ? Array.from(new Set(posters.map((p) => p.name)))
-        .filter((name) => name.toLowerCase().startsWith(query))
-        .slice(0, 4)
+      .filter((name) => name.toLowerCase().startsWith(query))
+      .slice(0, 4)
     : [];
 
   const hasResults = filteredHistory.length > 0 || filteredCategories.length > 0 || filteredPosters.length > 0;
@@ -215,39 +215,42 @@ export default function Navbar({
           <div className="flex flex-wrap items-center gap-2.5 py-2 md:h-16 md:flex-nowrap md:gap-6 md:py-0 lg:gap-8">
 
             {/* ── BRAND ── */}
-            <div
-              onClick={goHome}
-              className="group order-1 flex min-w-0 flex-1 items-center cursor-pointer select-none md:w-auto md:flex-shrink-0"
-              title="Go to Home"
-            >
-              <div className="relative transition duration-300 group-hover:drop-shadow-[0_0_14px_rgba(249,115,22,0.35)]">
-                <img
-                  src={logo}
-                  alt="InkNWall Logo"
-                  className="h-10 w-10 origin-left scale-110 object-contain transition-all duration-300 group-hover:scale-125 sm:h-14 sm:w-14 md:h-20 md:w-20"
-                />
-              </div>
-              <span
-                className="navbar-brand-text ml-1.5 text-[0.95rem] tracking-tight bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent transition-all duration-300 group-hover:from-orange-500 group-hover:to-orange-400 sm:ml-2 sm:text-[1.1rem] md:text-[1.25rem]"
-                style={{
-                  background: "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #f97316 0%, #fb923c 100%)";
-                  (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
-                  (e.currentTarget as HTMLElement).style.backgroundClip = "text";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)";
-                  (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
-                  (e.currentTarget as HTMLElement).style.backgroundClip = "text";
-                }}
+            <div className="order-1 flex min-w-0 flex-1 items-center md:w-auto md:flex-shrink-0">
+              <button
+                onClick={goHome}
+                aria-label="Go to InkNWall homepage"
+                className="group flex items-center cursor-pointer select-none"
+                title="Go to Home"
               >
-                InkNWall
-              </span>
+                <div className="relative transition duration-300 group-hover:drop-shadow-[0_0_14px_rgba(249,115,22,0.35)]">
+                  <img
+                    src={logo}
+                    alt="InkNWall Logo"
+                    className="h-10 w-10 origin-left scale-110 object-contain transition-all duration-300 group-hover:scale-125 sm:h-14 sm:w-14 md:h-20 md:w-20"
+                  />
+                </div>
+                <span
+                  className="navbar-brand-text ml-1.5 text-[0.95rem] tracking-tight bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent transition-all duration-300 group-hover:from-orange-500 group-hover:to-orange-400 sm:ml-2 sm:text-[1.1rem] md:text-[1.25rem]"
+                  style={{
+                    background: "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #f97316 0%, #fb923c 100%)";
+                    (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
+                    (e.currentTarget as HTMLElement).style.backgroundClip = "text";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)";
+                    (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
+                    (e.currentTarget as HTMLElement).style.backgroundClip = "text";
+                  }}
+                >
+                  InkNWall
+                </span>
+              </button>
             </div>
 
             {/* ── SEARCH ── */}
@@ -255,7 +258,7 @@ export default function Navbar({
               ref={searchRef}
               className="search-glow order-3 relative w-full min-w-0 rounded-full transition-all duration-300 md:order-2 md:max-w-xl md:flex-1"
             >
-              
+
               {/* Search icon */}
               <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 sm:pl-4">
                 <div
@@ -480,6 +483,7 @@ export default function Navbar({
 
               <button
                 onClick={toggleCart}
+                aria-label="Open shopping cart"
                 className="group relative flex-shrink-0 rounded-full border border-white/10 bg-white/[0.04] p-2.5 text-gray-400 transition-all duration-200 hover:text-white"
                 style={{ color: "#9ca3af", transition: "color 0.2s ease" }}
                 onMouseEnter={e => (e.currentTarget.style.color = "#ffffff")}
