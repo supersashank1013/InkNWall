@@ -2,11 +2,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiUrl } from "../lib/api";
 
-const images = [
-  "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=600",
-  "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?q=80&w=600",
-  "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
-];
+
 
 interface AnnouncementPoster {
   id?: number;
@@ -98,7 +94,7 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
   const [featuredPosters, setFeaturedPosters] = useState<AnnouncementPoster[]>(() => getStoredFeaturedPosters());
 
   const hasFeaturedPosters = featuredPosters.length > 0;
-  const currentLength = hasFeaturedPosters ? featuredPosters.length : images.length;
+  const currentLength = featuredPosters.length;
   const activeIndex = index % (currentLength || 1);
 
   useEffect(() => {
@@ -247,16 +243,22 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
                     </button>
                   ))
                 ) : (
-                  images.map((img, i) => (
-                    <img
-                      key={img}
-                      src={img}
-                      alt={`Featured Drop ${i + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        i === activeIndex ? "z-10 scale-100 opacity-100" : "z-0 scale-110 opacity-0"
-                      }`}
-                    />
-                  ))
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0a0a0a]">
+                    {/* Subtle grid texture */}
+                    <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:32px_32px]" />
+                    {/* Glow blob */}
+                    <div className="absolute h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
+                    {/* Icon */}
+                    <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_0_32px_rgba(255,95,31,0.12)]">
+                      <svg className="h-6 w-6 text-orange-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 21h18M6.75 6.75h.008v.008H6.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                      </svg>
+                    </div>
+                    <div className="relative z-10 text-center px-6">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-orange-300/80">Coming Soon</p>
+                      <p className="mt-1 text-xs text-white/30 leading-relaxed">Featured drop will appear here</p>
+                    </div>
+                  </div>
                 )}
 
                 <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-[#050505] via-[#050505]/25 to-transparent" />
