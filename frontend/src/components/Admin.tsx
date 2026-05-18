@@ -197,12 +197,12 @@ export default function Admin() {
     return () => clearInterval(interval);
   }, []);
 
-const fetchPosters = () => {
-  fetch(apiUrl("/api/posters"))
-    .then((res) => res.json())
-    .then((data) => {
-      const mapped = Array.isArray(data)
-        ? (data as BackendPoster[]).map((p) => ({
+  const fetchPosters = () => {
+    fetch(apiUrl("/api/posters"))
+      .then((res) => res.json())
+      .then((data) => {
+        const mapped = Array.isArray(data)
+          ? (data as BackendPoster[]).map((p) => ({
             id: p.id,
             name: p.name,
             imageUrl: p.imageUrl,
@@ -212,16 +212,16 @@ const fetchPosters = () => {
             price: Number(p.price),
             isPremium: p.isPremium ?? false, // ⭐ FINAL FIX
           }))
-        : [];
+          : [];
         console.log("MAPPED:", mapped); // ⭐ ADD THIS
 
-      setPosters(mapped);
-    })
-    .catch((err) => {
-      console.error("Failed to fetch posters:", err);
-      setPosters([]);
-    });
-};;
+        setPosters(mapped);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch posters:", err);
+        setPosters([]);
+      });
+  };;
 
   const fetchOrders = () => {
     setOrdersLoading(true);
@@ -265,46 +265,46 @@ const fetchPosters = () => {
   };
 
   const downloadCSV = async () => {
-  try {
-    const res = await authFetch("/api/orders/export", { method: "GET" }, "admin");
+    try {
+      const res = await authFetch("/api/orders/export", { method: "GET" }, "admin");
 
-    if (!res.ok) throw new Error("Download failed");
+      if (!res.ok) throw new Error("Download failed");
 
-    const blob = await res.blob();
+      const blob = await res.blob();
 
-    // Handle IE/Edge
-    const legacyNavigator = window.navigator as LegacyNavigator;
-    if (legacyNavigator.msSaveOrOpenBlob) {
-      legacyNavigator.msSaveOrOpenBlob(blob, "orders.csv");
-      return;
+      // Handle IE/Edge
+      const legacyNavigator = window.navigator as LegacyNavigator;
+      if (legacyNavigator.msSaveOrOpenBlob) {
+        legacyNavigator.msSaveOrOpenBlob(blob, "orders.csv");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+
+      // Check if device is mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // For mobile devices, open in new tab/window which will prompt download
+        window.open(url, '_blank');
+      } else {
+        // For desktop, use the standard download approach
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "orders.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      // Clean up the blob URL after a short delay
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+
+    } catch (err) {
+      console.error(err);
+      toast.error("CSV download failed");
     }
-
-    const url = window.URL.createObjectURL(blob);
-
-    // Check if device is mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      // For mobile devices, open in new tab/window which will prompt download
-      window.open(url, '_blank');
-    } else {
-      // For desktop, use the standard download approach
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "orders.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
-
-    // Clean up the blob URL after a short delay
-    setTimeout(() => window.URL.revokeObjectURL(url), 100);
-
-  } catch (err) {
-    console.error(err);
-    toast.error("CSV download failed");
-  }
-};
+  };
 
   async function fetchLogs() {
     const res = await authFetch("/api/admin/logs", {}, "admin");
@@ -420,14 +420,14 @@ const fetchPosters = () => {
           formData.append("posterId", posterId.toString());
         }
 
-const res = await authFetch(
-        "/api/announcement",
-        {
-          method: "POST",
-          body: formData,
-        },
-        "admin"
-      );
+        const res = await authFetch(
+          "/api/announcement",
+          {
+            method: "POST",
+            body: formData,
+          },
+          "admin"
+        );
 
         if (!res.ok) throw new Error("Announcement failed");
       }
@@ -463,58 +463,59 @@ const res = await authFetch(
 
   const handleUpload = async () => {
 
-  const slotsToUpload = uploadSlots.filter(
-    (slot) =>
-      slot.file &&
-      slot.name.trim() &&
-      slot.category.trim() &&
-      slot.price !== null
-  );
+    const slotsToUpload = uploadSlots.filter(
+      (slot) =>
+        slot.file &&
+        slot.name.trim() &&
+        slot.category.trim() &&
+        slot.price !== null
+    );
 
-  if (slotsToUpload.length === 0) {
-    toast.error("Please upload images and fill all details", { duration: 2000 });
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    for (const slot of slotsToUpload) {
-
-      const formData = new FormData();
-      formData.append("name", slot.name);
-      formData.append("category", slot.category);
-      formData.append("price", String(slot.price));
-      formData.append("isPremium", String(slot.isPremium));
-      formData.append("file", slot.file as File);
-
-      const res = await authFetch(
-        "/api/posters/upload",
-        {
-          method: "POST",
-          body: formData,
-        },
-        "admin"
-      );
-
-      const text = await res.text();
-      console.log("UPLOAD RESPONSE:", text);
-
-      if (!res.ok) {
-        throw new Error(`Failed to upload ${slot.name}`);
-      }
+    if (slotsToUpload.length === 0) {
+      toast.error("Please upload images and fill all details", { duration: 2000 });
+      return;
     }
 
-    toast.success(`Uploaded ${slotsToUpload.length} posters`);
-    fetchPosters();
+    setLoading(true);
 
-  } catch (err) {
-    console.error(err);
-    toast.error("Upload failed", { duration: 2000 });
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      for (const slot of slotsToUpload) {
+
+        const formData = new FormData();
+        formData.append("name", slot.name);
+        formData.append("category", slot.category);
+        formData.append("price", String(slot.price));
+        formData.append("isPremium", String(slot.isPremium));
+        formData.append("file", slot.file as File);
+
+        const res = await authFetch(
+          "/api/posters/upload",
+          {
+            method: "POST",
+            body: formData,
+          },
+          "admin"
+        );
+
+        const text = await res.text();
+        console.log("UPLOAD RESPONSE:", text);
+
+        if (!res.ok) {
+          throw new Error(`Failed to upload ${slot.name}`);
+        }
+      }
+
+      toast.success(`Uploaded ${slotsToUpload.length} posters`);
+      setUploadSlots(Array.from({ length: 10 }, () => ({ ...EMPTY_UPLOAD_SLOT })));
+      fetchPosters();
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Upload failed", { duration: 2000 });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async (id: number) => {
     const performDelete = async (toastId: string) => {
@@ -551,26 +552,33 @@ const res = await authFetch(
 
     toast(
       (toastItem) => (
-        <div className="w-[320px] rounded-2xl border border-white/10 bg-[#101010] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-          <div className="mb-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-300">Confirm Delete</p>
-            <p className="mt-2 text-sm leading-6 text-gray-200">
-              Are you sure you want to permanently delete this poster?
-            </p>
+        <div className="w-[300px] rounded-2xl border border-red-500/20 bg-[#0d0d0d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
+              <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Delete Poster?</p>
+              <p className="mt-1 text-xs leading-5 text-gray-500">
+                This is permanent and cannot be undone.
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-2">
             <button
               onClick={() => toast.dismiss(toastItem.id)}
-              className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+              className="flex-1 rounded-xl border border-white/10 py-2 text-xs font-semibold text-gray-400 transition hover:border-white/20 hover:text-white"
             >
               Cancel
             </button>
             <button
               onClick={() => performDelete(toastItem.id)}
-              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+              className="flex-1 rounded-xl bg-red-600/90 py-2 text-xs font-semibold text-white transition hover:bg-red-500"
             >
-              Delete
+              Yes, Delete
             </button>
           </div>
         </div>
@@ -674,8 +682,8 @@ const res = await authFetch(
         <div className="w-[320px] rounded-2xl border border-white/10 bg-[#101010] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
           <div className="mb-4 flex items-start gap-3">
             <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${newStatus === "COLLECTED"
-                ? "bg-emerald-500/15 text-emerald-300"
-                : "bg-sky-500/15 text-sky-300"
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-sky-500/15 text-sky-300"
               }`}>
               {newStatus === "COLLECTED" ? "✓" : "→"}
             </div>
@@ -698,8 +706,8 @@ const res = await authFetch(
                 updateOrderStatus(id, newStatus);
               }}
               className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${newStatus === "COLLECTED"
-                  ? "bg-emerald-600 hover:bg-emerald-500"
-                  : "bg-sky-600 hover:bg-sky-500"
+                ? "bg-emerald-600 hover:bg-emerald-500"
+                : "bg-sky-600 hover:bg-sky-500"
                 }`}
             >
               Confirm
@@ -741,8 +749,8 @@ const res = await authFetch(
                     key={panel.key}
                     onClick={() => setActivePanel(panel.key)}
                     className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${activePanel === panel.key
-                        ? "bg-orange-600 text-white shadow-[0_10px_30px_rgba(255,95,31,0.25)]"
-                        : "border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
+                      ? "bg-orange-600 text-white shadow-[0_10px_30px_rgba(255,95,31,0.25)]"
+                      : "border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
                       }`}
                   >
                     {panel.label}
@@ -1068,7 +1076,16 @@ const res = await authFetch(
                       <div className="space-y-2">
                         <input value={slot.name} onChange={(e) => handleSlotInputChange(index, "name", e.target.value)} placeholder="Name" className="w-full rounded border border-white/10 bg-black p-2 text-sm focus:border-orange-500" />
                         <input value={slot.category} onChange={(e) => handleSlotInputChange(index, "category", e.target.value)} placeholder="Category" className="w-full rounded border border-white/10 bg-black p-2 text-sm focus:border-orange-500" />
-                        <input value={slot.price} onChange={(e) => handleSlotInputChange(index, "price", e.target.value)} placeholder="Price" className="w-full rounded border border-white/10 bg-black p-2 text-sm focus:border-orange-500" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Price"
+                          value={slot.price}
+                          onChange={(e) =>
+                            handleSlotInputChange(index, "price", e.target.value.replace(/[^0-9]/g, ""))
+                          } 
+                          className="w-full rounded border border-white/10 bg-black p-2 text-sm focus:border-orange-500" />
                         <select
                           value={slot.isPremium ? "premium" : "standard"}
                           onChange={(e) => handleSlotPremiumChange(index, e.target.value === "premium")}
@@ -1161,10 +1178,10 @@ const res = await authFetch(
                             <p className="font-semibold text-orange-400">{log.adminEmail}</p>
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${log.action === "LOGIN"
-                                  ? "bg-green-500/20 text-green-400"
-                                  : log.action === "UPLOAD"
-                                    ? "bg-orange-500/20 text-orange-400"
-                                    : "bg-gray-500/20 text-gray-400"
+                                ? "bg-green-500/20 text-green-400"
+                                : log.action === "UPLOAD"
+                                  ? "bg-orange-500/20 text-orange-400"
+                                  : "bg-gray-500/20 text-gray-400"
                                 }`}
                             >
                               {log.action}
