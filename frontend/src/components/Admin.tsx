@@ -120,8 +120,10 @@ const formatDate = (date?: string) => {
   return new Date(date.slice(0, 23)).toLocaleString();
 };
 
+
 export default function Admin() {
   const [uploadSlots, setUploadSlots] = useState<UploadSlot[]>(Array.from({ length: 10 }, () => ({ ...EMPTY_UPLOAD_SLOT })));
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [posters, setPosters] = useState<AdminPoster[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<OrderTab>("PLACED");
@@ -320,6 +322,17 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
+    if (deleteConfirmId !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [deleteConfirmId]);
+
+  useEffect(() => {
     setOrderPages((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -408,7 +421,14 @@ export default function Admin() {
   };
 
   const handleAnnouncement = async () => {
-    if (!announcement.trim()) return;
+    if (!announcement.trim() && selectedPosters.length === 0) {
+      toast.error("Please add a message or select a poster", { duration: 2000 });
+      return;
+    }
+    if (!announcement.trim()) {
+      toast.error("Please add an announcement message", { duration: 2000 });
+      return;
+    }
     setSending(true);
     try {
       const posterIdsToSend = selectedPosters.length > 0 ? selectedPosters : [undefined];
@@ -517,74 +537,40 @@ export default function Admin() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const performDelete = async (toastId: string) => {
-      toast.dismiss(toastId);
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
 
-      if (!token) {
-        toast.error("Admin authorization missing", { duration: 2000 });
+  const performDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
+
+    if (!token) {
+      toast.error("Admin authorization missing", { duration: 2000 });
+      return;
+    }
+
+    try {
+      const response = await authFetch(
+        `/api/posters/${id}`,
+        { method: "DELETE" },
+        "admin"
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to delete poster ${id}:`, response.status, errorText);
+        toast.error(`Delete failed: ${response.status} ${response.statusText}`, { duration: 2000 });
         return;
       }
 
-      try {
-        const response = await authFetch(
-          `/api/posters/${id}`,
-          {
-            method: "DELETE",
-          },
-          "admin"
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to delete poster ${id}:`, response.status, errorText);
-          toast.error(`Delete failed: ${response.status} ${response.statusText}`, { duration: 2000 });
-          return;
-        }
-
-        toast.success("Poster deleted successfully");
-        fetchPosters();
-      } catch (err) {
-        console.error("Delete request failed:", err);
-        toast.error("Delete failed. Please try again.", { duration: 2000 });
-      }
-    };
-
-    toast(
-      (toastItem) => (
-        <div className="w-[300px] rounded-2xl border border-red-500/20 bg-[#0d0d0d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
-              <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">Delete Poster?</p>
-              <p className="mt-1 text-xs leading-5 text-gray-500">
-                This is permanent and cannot be undone.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => toast.dismiss(toastItem.id)}
-              className="flex-1 rounded-xl border border-white/10 py-2 text-xs font-semibold text-gray-400 transition hover:border-white/20 hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => performDelete(toastItem.id)}
-              className="flex-1 rounded-xl bg-red-600/90 py-2 text-xs font-semibold text-white transition hover:bg-red-500"
-            >
-              Yes, Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 10000 }
-    );
+      toast.success("Poster deleted successfully");
+      fetchPosters();
+    } catch (err) {
+      console.error("Delete request failed:", err);
+      toast.error("Delete failed. Please try again.", { duration: 2000 });
+    }
   };
 
   const handleDeleteAnnouncement = async (id: number) => {
@@ -1084,7 +1070,7 @@ export default function Admin() {
                           value={slot.price}
                           onChange={(e) =>
                             handleSlotInputChange(index, "price", e.target.value.replace(/[^0-9]/g, ""))
-                          } 
+                          }
                           className="w-full rounded border border-white/10 bg-black p-2 text-sm focus:border-orange-500" />
                         <select
                           value={slot.isPremium ? "premium" : "standard"}
@@ -1110,16 +1096,82 @@ export default function Admin() {
           )}
           {previewImage && <PreviewModal img={previewImage} close={() => setPreviewImage(null)} />}
           {activePanel === "UPLOADS" && (
-            <section className="grid grid-cols-2 gap-6 md:grid-cols-4">
-              {posters.map((poster) => (
-                <div key={poster.id} className="rounded-xl bg-[#111] p-3">
-                  <img src={poster.imageUrl} alt={poster.name} className="h-40 w-full rounded object-cover" />
-                  <p className="mt-3">{poster.name}</p>
-                  <button onClick={() => handleDelete(poster.id)} className="mt-3 text-sm text-red-400 transition hover:text-red-300">
-                    Delete
-                  </button>
+            <section className="space-y-6 rounded-2xl border border-white/10 bg-[#111]/80 p-6 sm:p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
+                    Poster Library
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-white">
+                    Uploaded Posters
+                    {posters.length > 0 && (
+                      <span className="ml-2 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-sm font-semibold text-gray-400">
+                        {posters.length}
+                      </span>
+                    )}
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    All active posters in your store.
+                  </p>
                 </div>
-              ))}
+                <button
+                  onClick={fetchPosters}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-400 transition hover:border-orange-500/40 hover:text-white"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {posters.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 py-16 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-600">
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-base font-semibold text-gray-400">No posters uploaded yet</p>
+                  <p className="mt-1 text-sm text-gray-600">Use the upload section above to add posters to your store.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  {posters.map((poster) => (
+                    <div
+                      key={poster.id}
+                      className="group relative overflow-hidden rounded-xl border border-white/10 bg-[#0d0d0d] transition hover:border-orange-500/30"
+                    >
+                      <div
+                        className="aspect-[3/4] w-full cursor-pointer overflow-hidden"
+                        onClick={() => setPreviewImage(poster.imageUrl)}
+                      >
+                        <img
+                          src={poster.imageUrl}
+                          alt={poster.name}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:brightness-75"
+                        />
+                      </div>
+
+                      <div className="p-3">
+                        <p className="truncate text-sm font-semibold text-white">{poster.name}</p>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-xs text-gray-500">{poster.category}</span>
+                          <span className="text-xs font-bold text-orange-400">Rs. {poster.price}</span>
+                        </div>
+                        {poster.isPremium && (
+                          <span className="mt-1.5 inline-block rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-400">
+                            Premium
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleDelete(poster.id)}
+                          className="mt-3 w-full rounded-lg border border-red-500/20 bg-red-500/5 py-1.5 text-xs font-semibold text-red-400 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
           {activePanel === "LOGS" && (
@@ -1219,6 +1271,50 @@ export default function Admin() {
           )} */}
         </div>
       </div>
+      {deleteConfirmId !== null && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+          onClick={() => setDeleteConfirmId(null)}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-red-500/20 bg-[#0d0d0d] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
+                <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-base font-bold text-white">Delete Poster?</p>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  This action is permanent and cannot be undone. The poster will be removed from the store immediately.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-semibold text-gray-400 transition hover:border-white/20 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={performDelete}
+                className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-500 active:scale-95"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <AdminFooter />
     </>
   );

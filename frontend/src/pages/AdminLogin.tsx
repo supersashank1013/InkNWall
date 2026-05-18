@@ -8,6 +8,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function AdminLogin() {
       return;
     }
 
+    setLoading(true);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -72,6 +74,8 @@ export default function AdminLogin() {
       } else {
         toast.error("Login failed. Please try again.", { duration: 2000 });
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,10 +124,10 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-orange-600 rounded-lg font-bold hover:bg-orange-500 transition active:bg-orange-700"
-            disabled={!email.trim() || !password.trim()}
+            className="w-full py-3 bg-orange-600 rounded-lg font-bold hover:bg-orange-500 transition active:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={!email.trim() || !password.trim() || loading}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
