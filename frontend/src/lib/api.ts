@@ -51,12 +51,8 @@ export const authFetch = async (
 ): Promise<Response> => {
   const token = getStoredToken(authType);
 
-  if (token && isJwtExpired(token)) {
-    if (authType === "admin") {
-      clearAdminAuth();
-    } else {
-      clearUserAuth();
-    }
+  if (token && isJwtExpired(token) && authType !== "admin") {
+    clearUserAuth();
     throw new Error("Token expired");
   }
 
@@ -71,9 +67,7 @@ export const authFetch = async (
   });
 
   if (response.status === 401 || response.status === 403) {
-    if (authType === "admin") {
-      clearAdminAuth();
-    } else {
+    if (authType !== "admin") {
       clearUserAuth();
     }
     throw response;
