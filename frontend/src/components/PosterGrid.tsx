@@ -1,5 +1,6 @@
 import { Eye, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useEffect } from "react";
+import type { CSSProperties } from "react";
 import type { Poster } from "../data/posters";
 import type { CartItem } from "../App";
 
@@ -12,6 +13,31 @@ interface Props {
   openModal: (img: string) => void;
   highlightedPoster?: { id: number; nonce: number } | null;
 }
+
+interface PremiumSparkle {
+  top: string;
+  delay: string;
+  size: string;
+  left?: string;
+  right?: string;
+}
+
+const PREMIUM_SPARKLES: PremiumSparkle[] = [
+  { top: "12%", left: "8%", delay: "0s", size: "5px" },
+  { top: "18%", right: "10%", delay: "0.7s", size: "4px" },
+  { top: "6%", right: "22%", delay: "1.4s", size: "3px" },
+  { top: "28%", left: "14%", delay: "1.1s", size: "3px" },
+];
+
+const getSparkleStyle = (sparkle: PremiumSparkle): CSSProperties => ({
+  top: sparkle.top,
+  left: sparkle.left,
+  right: sparkle.right,
+  width: sparkle.size,
+  height: sparkle.size,
+  animation: `sparkle-pop 1.6s ease-in-out ${sparkle.delay} infinite`,
+  boxShadow: "0 0 4px 1px rgba(253,224,71,0.7)",
+});
 
 export default function PosterGrid({
   shopRef,
@@ -120,6 +146,45 @@ export default function PosterGrid({
         .poster-card-pop {
           animation: poster-card-pop 0.72s cubic-bezier(0.2, 1, 0.2, 1);
         }
+
+        @keyframes gold-shimmer {
+          0% { background-position: -250% center; }
+          100% { background-position: 250% center; }
+        }
+
+        @keyframes gold-border-pulse {
+          0%, 100% {
+            box-shadow:
+              0 0 0 1px rgba(250, 204, 21, 0.18),
+              0 0 16px rgba(234, 179, 8, 0.34),
+              0 0 34px rgba(234, 179, 8, 0.16),
+              0 16px 50px rgba(0, 0, 0, 0.28);
+            border-color: rgba(250, 204, 21, 0.48);
+          }
+          50% {
+            box-shadow:
+              0 0 0 1px rgba(250, 204, 21, 0.3),
+              0 0 28px rgba(234, 179, 8, 0.62),
+              0 0 60px rgba(234, 179, 8, 0.26),
+              0 20px 60px rgba(0, 0, 0, 0.35);
+            border-color: rgba(250, 204, 21, 0.86);
+          }
+        }
+
+        @keyframes glitter-sweep {
+          0% { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+          18% { opacity: 1; }
+          100% { transform: translateX(220%) skewX(-12deg); opacity: 0; }
+        }
+
+        @keyframes sparkle-pop {
+          0%, 100% { transform: scale(0.6); opacity: 0.4; }
+          50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .premium-gold-frame {
+          animation: gold-border-pulse 2.6s ease-in-out infinite;
+        }
       `}</style>
 
       <section
@@ -129,23 +194,22 @@ export default function PosterGrid({
         className="space-y-4 sm:space-y-6"
       >
         <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:pb-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-200">Poster library</p>
-          <h2 className="mt-2 text-lg font-black tracking-tight text-white sm:text-2xl">Find the print that changes the whole room</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-gray-400 sm:text-sm">
-            Preview the artwork, filter by category, and add pieces to your cart without breaking the browsing flow.
-          </p>
-        </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-200">Poster library</p>
+            <h2 className="mt-2 text-lg font-black tracking-tight text-white sm:text-2xl">Find the print that changes the whole room</h2>
+            <p className="mt-2 max-w-2xl text-xs leading-6 text-gray-400 sm:text-sm">
+              Preview the artwork, filter by category, and add pieces to your cart without breaking the browsing flow.
+            </p>
+          </div>
 
-        <div className="flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300 sm:gap-3 sm:text-xs sm:tracking-[0.2em]">
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2">{posters.length} posters showing</span>
-          <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 sm:inline-flex">Tap artwork to preview</span>
+          <div className="flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300 sm:gap-3 sm:text-xs sm:tracking-[0.2em]">
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2">{posters.length} posters showing</span>
+            <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 sm:inline-flex">Tap artwork to preview</span>
+          </div>
         </div>
-      </div>
 
         <div className="grid max-[360px]:grid-cols-1 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {posters.map((p, index) => {
-            console.log("POSTER:", p);
             const cartItem = cart.find((c) => c.id === p.id);
             const qtyInCart = cartItem?.quantity || 0;
             const isHighlighted = highlightedPoster?.id === p.id;
@@ -154,9 +218,10 @@ export default function PosterGrid({
               <div
                 id={`poster-card-${p.id}`}
                 key={p.id}
-                className={`group relative flex h-full scroll-mt-28 flex-col overflow-visible rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-2 shadow-[0_16px_50px_rgba(0,0,0,0.28)] transition-all duration-500 hover:-translate-y-1 hover:border-orange-400/35 hover:shadow-[0_24px_70px_rgba(255,95,31,0.14)] animate-in fade-in zoom-in-95 slide-in-from-bottom-8 sm:rounded-[24px] sm:p-2.5 ${
-                  isHighlighted ? "poster-card-pop border-orange-300/80" : ""
-                }`}
+                className={`group relative flex h-full scroll-mt-28 flex-col overflow-visible rounded-[20px] border p-2 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 sm:rounded-[24px] sm:p-2.5 transition-all duration-500 hover:-translate-y-1 ${p.isPremium
+                    ? "border-yellow-400/50 bg-[linear-gradient(180deg,rgba(250,204,21,0.12),rgba(180,83,9,0.04))] shadow-[0_16px_50px_rgba(0,0,0,0.28)] hover:border-yellow-300/75 hover:shadow-[0_24px_70px_rgba(234,179,8,0.2)]"
+                    : "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-[0_16px_50px_rgba(0,0,0,0.28)] hover:border-orange-400/35 hover:shadow-[0_24px_70px_rgba(255,95,31,0.14)]"
+                  } ${isHighlighted ? "poster-card-pop border-orange-300/80" : ""}`}
                 style={{
                   animationDelay: `${index * 50}ms`,
                   animationFillMode: "both",
@@ -169,111 +234,134 @@ export default function PosterGrid({
                   />
                 )}
 
-              {p.isPremium && (
-                <>
-                  {/* Triangle INSIDE */}
-                  <div className="absolute top-0 right-0 w-14 h-14 
-                    bg-gradient-to-tr from-yellow-400 to-yellow-600 
-                    z-30"
-                    style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }}
-                  />
+                {p.isPremium && (
+                  <>
+                    <span className="premium-gold-frame pointer-events-none absolute inset-0 z-10 rounded-[20px] border border-yellow-400/55 sm:rounded-[24px]" />
 
-                  {/* Text */}
-                  <span className="absolute top-[6px] right-[2px] text-[9px] font-bold 
-                     text-black rotate-45 z-40">
-                    PREMIUM
-                  </span>
-                </>
-              )}
+                    {/* Glitter sweep overlay */}
+                    <div
+                      className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-[20px] sm:rounded-[24px]"
+                    >
+                      <div
+                        className="absolute inset-y-0 w-16 opacity-0"
+                        style={{
+                          background: "linear-gradient(90deg, transparent, rgba(253,224,71,0.18), rgba(255,255,255,0.22), rgba(253,224,71,0.18), transparent)",
+                          animation: "glitter-sweep 2.8s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
 
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,95,31,0.18),transparent_45%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    {/* Sparkle dots */}
+                    {PREMIUM_SPARKLES.map((sparkle, i) => (
+                      <div
+                        key={i}
+                        className="pointer-events-none absolute z-30 rounded-full bg-yellow-200"
+                        style={getSparkleStyle(sparkle)}
+                      />
+                    ))}
 
-              <button
-                type="button"
-                aria-label={`Preview ${p.name}`}
-                className="relative mb-3 aspect-[3/4] w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#050505] text-left sm:mb-4 sm:rounded-[18px]"
-                onClick={() => openModal(p.img)}
-              >
-                {qtyInCart > 0 && (
-                  <div className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#111] bg-orange-600 text-[9px] font-black text-white shadow-[0_0_22px_rgba(234,88,12,0.65)] sm:right-2.5 sm:top-2.5 sm:h-7 sm:w-7 sm:text-[10px]">
-                    {qtyInCart}
-                  </div>
+                    {/* Premium badge */}
+                    <div
+                      className={`pointer-events-none absolute right-2 z-30 overflow-hidden rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-yellow-950 shadow-[0_2px_12px_rgba(234,179,8,0.5)] sm:right-2.5 sm:text-[9px] ${qtyInCart > 0 ? "top-10 sm:top-11" : "top-2 sm:top-2.5"}`}
+                      style={{
+                        background: "linear-gradient(105deg, #fde68a, #fbbf24, #f59e0b, #fcd34d, #fbbf24)",
+                        backgroundSize: "250% auto",
+                        animation: "gold-shimmer 2.2s linear infinite",
+                      }}
+                    >
+                      PREMIUM
+                    </div>
+                  </>
                 )}
 
-                <div className="absolute left-2 top-2 z-20 rounded-full border border-white/10 bg-black/45 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-xl sm:left-2.5 sm:top-2.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.2em]">
-                  {p.cat}
-                </div>
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,95,31,0.18),transparent_45%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  className="h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:brightness-110"
-                />
+                <button
+                  type="button"
+                  aria-label={`Preview ${p.name}`}
+                  className="relative mb-3 aspect-[3/4] w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#050505] text-left sm:mb-4 sm:rounded-[18px]"
+                  onClick={() => openModal(p.img)}
+                >
+                  {qtyInCart > 0 && (
+                    <div className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#111] bg-orange-600 text-[9px] font-black text-white shadow-[0_0_22px_rgba(234,88,12,0.65)] sm:right-2.5 sm:top-2.5 sm:h-7 sm:w-7 sm:text-[10px]">
+                      {qtyInCart}
+                    </div>
+                  )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent opacity-90 transition duration-500 group-hover:opacity-65" />
-
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-2.5 sm:p-3">
-                  <div>
-                    <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-orange-200 sm:text-[9px] sm:tracking-[0.24em]">Preview</p>
-                    <p className="mt-1 hidden text-xs font-semibold text-white/90 sm:block sm:text-sm">Open artwork view</p>
+                  <div className="absolute left-2 top-2 z-20 rounded-full border border-white/10 bg-black/45 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-xl sm:left-2.5 sm:top-2.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.2em]">
+                    {p.cat}
                   </div>
 
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur-xl transition-transform duration-300 group-hover:scale-105 sm:h-9 sm:w-9">
-                    <Eye className="h-4 w-4" />
-                  </span>
-                </div>
-              </button>
+                  <img
+                    src={p.img}
+                    alt={p.name}
+                    className="h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:brightness-110"
+                  />
 
-              <div className="relative flex flex-grow flex-col justify-between gap-2 px-0.5 pb-0.5 sm:gap-3 sm:px-1 sm:pb-1">
-                <div>
-                  <h3 className="line-clamp-2 min-h-[2.25rem] text-[13px] font-black uppercase tracking-tight text-gray-100 sm:text-base">
-                    {p.name}
-                  </h3>
-                </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent opacity-90 transition duration-500 group-hover:opacity-65" />
 
-                <div className="flex flex-col items-stretch gap-2 border-t border-white/10 pt-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2 sm:pt-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gray-500">Price</p>
-                    <span className="mt-1 block text-base font-black tracking-tight text-white sm:text-xl">
-                      Rs. {p.price}
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-2.5 sm:p-3">
+                    <div>
+                      <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-orange-200 sm:text-[9px] sm:tracking-[0.24em]">Preview</p>
+                      <p className="mt-1 hidden text-xs font-semibold text-white/90 sm:block sm:text-sm">Open artwork view</p>
+                    </div>
+
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur-xl transition-transform duration-300 group-hover:scale-105 sm:h-9 sm:w-9">
+                      <Eye className="h-4 w-4" />
                     </span>
                   </div>
+                </button>
 
-                  {qtyInCart > 0 ? (
-                    <div className="flex items-center gap-1 self-start rounded-2xl border border-white/10 bg-[#1A1A1A]/90 p-1 shadow-inner backdrop-blur-xl sm:self-auto">
-                      <button
-                        onClick={() => decrease(p.id)}
-                        aria-label={`Decrease quantity of ${p.name}`}
-                        className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
+                <div className="relative flex flex-grow flex-col justify-between gap-2 px-0.5 pb-0.5 sm:gap-3 sm:px-1 sm:pb-1">
+                  <div>
+                    <h3 className="line-clamp-2 min-h-[2.25rem] text-[13px] font-black uppercase tracking-tight text-gray-100 sm:text-base">
+                      {p.name}
+                    </h3>
+                  </div>
 
-                      <span className="w-5 text-center text-sm font-bold text-white sm:w-6">
-                        {qtyInCart}
+                  <div className="flex flex-col items-stretch gap-2 border-t border-white/10 pt-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2 sm:pt-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gray-500">Price</p>
+                      <span className="mt-1 block text-base font-black tracking-tight text-white sm:text-xl">
+                        Rs. {p.price}
                       </span>
-
-                      <button
-                        onClick={() => increase(p.id)}
-                        aria-label={`Increase quantity of ${p.name}`}
-                        className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => addToCart(p.id)}
-                      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] px-2.5 py-2.5 text-[9px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-all duration-300 hover:border-orange-500 hover:bg-orange-600 hover:text-white active:scale-95 sm:w-auto sm:px-4 sm:text-[10px] sm:tracking-[0.18em]"
-                    >
-                      <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition duration-700 group-hover:translate-x-[100%] group-hover:opacity-100" />
-                      <ShoppingBag className="relative z-10 h-4 w-4" />
-                      <span className="relative z-10 sm:hidden">Add</span>
-                      <span className="relative z-10 hidden sm:inline">Add to Cart</span>
-                    </button>
-                  )}
+
+                    {qtyInCart > 0 ? (
+                      <div className="flex items-center gap-1 self-start rounded-2xl border border-white/10 bg-[#1A1A1A]/90 p-1 shadow-inner backdrop-blur-xl sm:self-auto">
+                        <button
+                          onClick={() => decrease(p.id)}
+                          aria-label={`Decrease quantity of ${p.name}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+
+                        <span className="w-5 text-center text-sm font-bold text-white sm:w-6">
+                          {qtyInCart}
+                        </span>
+
+                        <button
+                          onClick={() => increase(p.id)}
+                          aria-label={`Increase quantity of ${p.name}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-xl text-gray-400 transition-all hover:bg-orange-600 hover:text-white active:scale-90 sm:h-8 sm:w-8"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(p.id)}
+                        className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] px-2.5 py-2.5 text-[9px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-all duration-300 hover:border-orange-500 hover:bg-orange-600 hover:text-white active:scale-95 sm:w-auto sm:px-4 sm:text-[10px] sm:tracking-[0.18em]"
+                      >
+                        <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition duration-700 group-hover:translate-x-[100%] group-hover:opacity-100" />
+                        <ShoppingBag className="relative z-10 h-4 w-4" />
+                        <span className="relative z-10 sm:hidden">Add</span>
+                        <span className="relative z-10 hidden sm:inline">Add to Cart</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
               </div>
             );
           })}

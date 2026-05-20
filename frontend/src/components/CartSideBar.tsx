@@ -20,6 +20,11 @@ interface StoredUser {
   [key: string]: unknown;
 }
 
+const DESKTOP_MEDIA_QUERY = "(min-width: 768px)";
+
+const getIsDesktopViewport = () =>
+  typeof window !== "undefined" ? window.matchMedia(DESKTOP_MEDIA_QUERY).matches : false;
+
 export default function CartSidebar({
   cart,
   isOpen,
@@ -33,14 +38,15 @@ export default function CartSidebar({
   const navigate = useNavigate();
 
   // Responsive breakpoint tracking
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 768 : false
-  );
+  const [isDesktop, setIsDesktop] = useState(getIsDesktopViewport);
+
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
+    if (typeof window === "undefined") return;
+
+    const mq = window.matchMedia(DESKTOP_MEDIA_QUERY);
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
     mq.addEventListener("change", handler);
-    setIsDesktop(mq.matches);
+
     return () => mq.removeEventListener("change", handler);
   }, []);
 

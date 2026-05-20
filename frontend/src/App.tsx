@@ -118,6 +118,8 @@ function HomePage() {
             price: number;
             imageUrl: string;
             category: string;
+            isPremium?: boolean;
+            premium?: boolean;
           }[]
         ) => {
           const formatted = data.map((poster) => ({
@@ -126,6 +128,7 @@ function HomePage() {
             price: poster.price,
             img: poster.imageUrl,
             cat: poster.category,
+            isPremium: poster.isPremium ?? poster.premium ?? false,
           }));
 
           setPosters(formatted);
