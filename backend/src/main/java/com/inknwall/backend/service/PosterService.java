@@ -68,6 +68,19 @@ public class PosterService {
     public List<Poster> getAllPosters() {
         return posterRepository.findAll();
     }
+
+    public Poster updatePoster(Long id, Poster updatedPoster) {
+        Poster poster = posterRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Poster not found"));
+
+        poster.setName(updatedPoster.getName());
+        poster.setCategory(updatedPoster.getCategory());
+        poster.setPrice(updatedPoster.getPrice());
+        poster.setPremium(updatedPoster.isPremium());
+
+        return posterRepository.save(poster);
+    }
+
     public void deletePoster(Long id) {
 
         // 🔹 Find only affected announcements (optimized)

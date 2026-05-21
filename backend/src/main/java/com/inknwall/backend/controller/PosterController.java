@@ -3,6 +3,7 @@ package com.inknwall.backend.controller;
 import com.inknwall.backend.entity.Poster;
 import com.inknwall.backend.service.PosterService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,5 +36,12 @@ public class PosterController {
     @DeleteMapping("/{id}")
     public void deletePoster(@PathVariable Long id) {
         posterService.deletePoster(id);
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updatePoster(
+            @PathVariable Long id,
+            @RequestBody Poster updatedPoster
+    ) {
+        return ResponseEntity.ok(posterService.updatePoster(id, updatedPoster));
     }
 }

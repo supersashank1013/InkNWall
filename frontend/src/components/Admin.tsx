@@ -62,6 +62,7 @@ interface BackendPoster {
   category: string;
   price: number | string;
   isPremium?: boolean;
+  premium?: boolean;
 }
 
 interface AdminPoster {
@@ -73,6 +74,7 @@ interface AdminPoster {
   cat: string;
   price: number;
   isPremium: boolean;
+  premium: boolean;
 }
 
 const ORDER_TABS = [
@@ -125,6 +127,9 @@ export default function Admin() {
   const [uploadSlots, setUploadSlots] = useState<UploadSlot[]>(Array.from({ length: 10 }, () => ({ ...EMPTY_UPLOAD_SLOT })));
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [posters, setPosters] = useState<AdminPoster[]>([]);
+  const [editingPoster, setEditingPoster] = useState<AdminPoster | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isUpdatingPoster, setIsUpdatingPoster] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<OrderTab>("PLACED");
   const [activePanel, setActivePanel] = useState<AdminPanel>("ORDERS");
@@ -212,7 +217,8 @@ export default function Admin() {
             category: p.category,
             cat: p.category,        // backend → frontend
             price: Number(p.price),
-            isPremium: p.isPremium ?? false, // ⭐ FINAL FIX
+            isPremium: p.isPremium ?? p.premium ?? false, // ⭐ FINAL FIX
+            premium: p.premium ?? p.isPremium ?? false,
           }))
           : [];
         console.log("MAPPED:", mapped); // ⭐ ADD THIS
@@ -322,7 +328,7 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (deleteConfirmId !== null) {
+    if (deleteConfirmId !== null || isEditOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -330,7 +336,7 @@ export default function Admin() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [deleteConfirmId]);
+  }, [deleteConfirmId, isEditOpen]);
 
   useEffect(() => {
     setOrderPages((prev) => {
@@ -539,6 +545,69 @@ export default function Admin() {
 
   const handleDelete = (id: number) => {
     setDeleteConfirmId(id);
+  };
+
+  const openEditPoster = (poster: AdminPoster) => {
+    setEditingPoster({
+      ...poster,
+      premium: poster.isPremium,
+    });
+    setIsEditOpen(true);
+  };
+
+  const closeEditPoster = () => {
+    setIsEditOpen(false);
+    setEditingPoster(null);
+  };
+
+  const handleUpdatePoster = async () => {
+    if (!editingPoster) return;
+
+    const name = editingPoster.name.trim();
+    const category = editingPoster.category.trim();
+    const price = Number(editingPoster.price);
+
+    if (!name || !category || Number.isNaN(price)) {
+      toast.error("Please fill all poster details", { duration: 2000 });
+      return;
+    }
+
+    setIsUpdatingPoster(true);
+
+    try {
+      const response = await authFetch(
+        `/api/posters/${editingPoster.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            category,
+            price,
+            premium: editingPoster.premium,
+          }),
+        },
+        "admin"
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to update poster ${editingPoster.id}:`, response.status, errorText);
+        toast.error(`Update failed: ${response.status} ${response.statusText}`, { duration: 2000 });
+        return;
+      }
+
+      toast.success("Poster updated successfully");
+      closeEditPoster();
+      fetchPosters();
+    } catch (err) {
+      console.error("Update request failed:", err);
+      toast.error("Update failed. Please try again.", { duration: 2000 });
+    } finally {
+      setIsUpdatingPoster(false);
+    }
   };
 
   const performDelete = async () => {
@@ -1161,12 +1230,22 @@ export default function Admin() {
                             Premium
                           </span>
                         )}
-                        <button
-                          onClick={() => handleDelete(poster.id)}
-                          className="mt-3 w-full rounded-lg border border-red-500/20 bg-red-500/5 py-1.5 text-xs font-semibold text-red-400 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
-                        >
-                          Delete
-                        </button>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditPoster(poster)}
+                            className="rounded-lg border border-blue-500/25 bg-blue-500/10 py-1.5 text-xs font-semibold text-blue-300 transition hover:border-blue-400/50 hover:bg-blue-500/20 hover:text-blue-200"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(poster.id)}
+                            className="rounded-lg border border-red-500/20 bg-red-500/5 py-1.5 text-xs font-semibold text-red-400 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1271,6 +1350,107 @@ export default function Admin() {
           )} */}
         </div>
       </div>
+      {isEditOpen && editingPoster && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+          onClick={closeEditPoster}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          <form
+            className="relative w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleUpdatePoster();
+            }}
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
+                Poster Library
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-white">Edit Poster</h2>
+            </div>
+
+            <input
+              type="text"
+              value={editingPoster.name}
+              onChange={(e) =>
+                setEditingPoster({
+                  ...editingPoster,
+                  name: e.target.value,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
+              placeholder="Poster Name"
+            />
+
+            <input
+              type="text"
+              value={editingPoster.category}
+              onChange={(e) =>
+                setEditingPoster({
+                  ...editingPoster,
+                  category: e.target.value,
+                  cat: e.target.value,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
+              placeholder="Category"
+            />
+
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={editingPoster.price}
+              onChange={(e) =>
+                setEditingPoster({
+                  ...editingPoster,
+                  price: Number(e.target.value.replace(/[^0-9]/g, "")),
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
+              placeholder="Price"
+            />
+
+            <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-200">
+              <input
+                type="checkbox"
+                checked={editingPoster.premium}
+                onChange={(e) =>
+                  setEditingPoster({
+                    ...editingPoster,
+                    premium: e.target.checked,
+                    isPremium: e.target.checked,
+                  })
+                }
+                className="h-4 w-4 accent-orange-500"
+              />
+              Premium Poster
+            </label>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={isUpdatingPoster}
+                className="flex-1 rounded-xl bg-orange-600 py-3 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isUpdatingPoster ? "Saving..." : "Save Changes"}
+              </button>
+
+              <button
+                type="button"
+                onClick={closeEditPoster}
+                disabled={isUpdatingPoster}
+                className="flex-1 rounded-xl border border-white/10 bg-zinc-800 py-3 text-sm font-semibold text-gray-200 transition hover:border-white/20 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
       {deleteConfirmId !== null && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
