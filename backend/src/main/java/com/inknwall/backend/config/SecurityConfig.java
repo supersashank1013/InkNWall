@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/announcement/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posters/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/posters/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/posters/**").authenticated()
 
                         // Protected
                         .requestMatchers("/api/orders/**").authenticated()

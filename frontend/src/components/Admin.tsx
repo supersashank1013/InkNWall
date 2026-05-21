@@ -572,6 +572,12 @@ export default function Admin() {
       return;
     }
 
+    if (!token || isJwtExpired(token)) {
+      toast.error("Admin session expired. Please log in again.", { duration: 2500 });
+      clearAdminAuth();
+      return;
+    }
+
     setIsUpdatingPoster(true);
 
     try {
@@ -587,6 +593,7 @@ export default function Admin() {
             category,
             price,
             premium: editingPoster.premium,
+            isPremium: editingPoster.premium,
           }),
         },
         "admin"
@@ -604,6 +611,12 @@ export default function Admin() {
       fetchPosters();
     } catch (err) {
       console.error("Update request failed:", err);
+      if (err instanceof Response && (err.status === 401 || err.status === 403)) {
+        toast.error("Admin authorization failed. Please log in again.", { duration: 2500 });
+        clearAdminAuth();
+        return;
+      }
+
       toast.error("Update failed. Please try again.", { duration: 2000 });
     } finally {
       setIsUpdatingPoster(false);
