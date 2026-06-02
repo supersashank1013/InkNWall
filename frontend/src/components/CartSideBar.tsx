@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import type { CartItem } from "../App";
 import AuthModal from "./AuthModal";
-import CompleteProfileModal from "./CompleteProfileModal";
 
 interface Props {
   cart: CartItem[];
@@ -33,8 +31,6 @@ export default function CartSidebar({
 }: Props) {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const [showAuth, setShowAuth] = useState(false);
-  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [profileUser, setProfileUser] = useState<StoredUser | null>(null);
   const navigate = useNavigate();
 
   // Responsive breakpoint tracking
@@ -123,12 +119,6 @@ export default function CartSidebar({
 
     if (!user) {
       setShowAuth(true);
-      return;
-    }
-
-    if (!user.hostel || !user.phone) {
-      setProfileUser(user);
-      setShowCompleteProfile(true);
       return;
     }
 
@@ -319,23 +309,6 @@ export default function CartSidebar({
       {showAuth && (
         <AuthModal
           onClose={() => setShowAuth(false)}
-          onProfileIncomplete={() => {
-            const user = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
-            if (user) { setProfileUser(user); setShowCompleteProfile(true); }
-            setShowAuth(false);
-          }}
-        />
-      )}
-
-      {showCompleteProfile && profileUser && (
-        <CompleteProfileModal
-          user={profileUser}
-          onDone={() => {
-            setShowCompleteProfile(false);
-            const updatedUser = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
-            setProfileUser(updatedUser);
-            toast.success("Profile completed successfully");
-          }}
         />
       )}
     </>

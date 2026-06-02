@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { toast } from "react-hot-toast";
-import CompleteProfileModal from "./CompleteProfileModal";
 import { apiUrl } from "../lib/api";
 
 interface AuthModalProps {
   onClose?: () => void;
-  onProfileIncomplete?: () => void;
 }
 
 interface GoogleJwtPayload {
@@ -15,20 +13,8 @@ interface GoogleJwtPayload {
   picture?: string;
 }
 
-interface AuthUser {
-  id: number | string;
-  name?: string;
-  email?: string;
-  roll?: string;
-  profilePic?: string;
-  hostel?: string;
-  phone?: string;
-}
-
-export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalProps) {
+export default function AuthModal({ onClose }: AuthModalProps) {
   const [message, setMessage] = useState("");
-  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4">
@@ -121,14 +107,8 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
                   return;
                 }
 
-                if (!normalizedUser.hostel || !normalizedUser.phone) {
-                  setUser(normalizedUser);
-                  setShowCompleteProfile(true);
-                  onProfileIncomplete?.();
-                } else {
-                  toast.success("Login success");
-                  window.location.reload();
-                }
+                toast.success("Login success");
+                window.location.reload();
 
               } catch (err) {
                 console.error(err);
@@ -157,15 +137,6 @@ export default function AuthModal({ onClose, onProfileIncomplete }: AuthModalPro
         )}
       </div>
 
-      {showCompleteProfile && user && (
-        <CompleteProfileModal
-          user={user}
-          onDone={() => {
-            setShowCompleteProfile(false);
-            window.location.reload();
-          }}
-        />
-      )}
     </div>
   );
 }

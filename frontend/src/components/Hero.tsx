@@ -171,7 +171,7 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
   };
 
   return (
-    <section className="relative isolate overflow-hidden px-1 py-6 sm:px-2 sm:py-8 lg:py-10">
+    <section className="relative isolate overflow-hidden px-1 py-4 sm:px-2 sm:py-6 lg:py-10">
       <div className="relative z-10 grid items-start gap-7 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(300px,400px)]">
         <div className="max-w-xl lg:pt-1">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-orange-300 sm:text-xs">

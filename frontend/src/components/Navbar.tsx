@@ -144,8 +144,6 @@ export default function Navbar({
     <>
       {/* ✨ Keyframe animations injected once */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-
         @keyframes navbar-shimmer {
           0%   { background-position: -200% center; }
           100% { background-position:  200% center; }
@@ -165,11 +163,6 @@ export default function Navbar({
           70%       { transform: scale(0.92); }
         }
 
-        .navbar-brand-text {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-        }
         .navbar-gradient-border::after {
           content: '';
           position: absolute;
@@ -215,7 +208,7 @@ export default function Navbar({
           <div className="flex flex-wrap items-center gap-2.5 py-2 md:h-16 md:flex-nowrap md:gap-6 md:py-0 lg:gap-8">
 
             {/* ── BRAND ── */}
-            <div className="order-1 flex min-w-0 flex-1 items-center md:w-auto md:flex-shrink-0">
+            <div className="order-1 flex min-w-0 flex-1 items-center md:w-auto md:flex-none">
               <button
                 onClick={goHome}
                 aria-label="Go to InkNWall homepage"
@@ -226,30 +219,9 @@ export default function Navbar({
                   <img
                     src={logo}
                     alt="InkNWall Logo"
-                    className="h-10 w-10 origin-left scale-110 object-contain transition-all duration-300 group-hover:scale-125 sm:h-14 sm:w-14 md:h-20 md:w-20"
+                    className="h-11 w-11 object-contain transition-all duration-300 group-hover:scale-110 sm:h-12 sm:w-12 md:h-14 md:w-14"
                   />
                 </div>
-                <span
-                  className="navbar-brand-text ml-1.5 text-[0.95rem] tracking-tight bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent transition-all duration-300 group-hover:from-orange-500 group-hover:to-orange-400 sm:ml-2 sm:text-[1.1rem] md:text-[1.25rem]"
-                  style={{
-                    background: "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #f97316 0%, #fb923c 100%)";
-                    (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
-                    (e.currentTarget as HTMLElement).style.backgroundClip = "text";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #ffffff 30%, #d1d1d1 100%)";
-                    (e.currentTarget as HTMLElement).style.webkitBackgroundClip = "text";
-                    (e.currentTarget as HTMLElement).style.backgroundClip = "text";
-                  }}
-                >
-                  InkNWall
-                </span>
               </button>
             </div>
 

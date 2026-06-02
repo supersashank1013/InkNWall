@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
@@ -82,6 +82,29 @@ const currencyFormatter = new Intl.NumberFormat("en-IN");
 const PAYMENT_REQUEST_TIMEOUT_MS = 90000;
 const RAZORPAY_OPEN_TOAST_ID = "razorpay-open";
 const RAZORPAY_CONFIRM_TOAST_ID = "razorpay-confirm";
+const IITM_HOSTELS = [
+  "Alakananda",
+  "Bhadra",
+  "Brahmaputra",
+  "Cauvery",
+  "Ganga",
+  "Godavari",
+  "Jamuna",
+  "Krishna",
+  "Mahanadi",
+  "Mandakini",
+  "Narmada",
+  "Pampa",
+  "Sabarmati",
+  "Saraswathi",
+  "Sarayu",
+  "Sharavathi",
+  "Sindhu",
+  "Swarnamukhi",
+  "Tamiraparani",
+  "Tapti",
+  "Tunga",
+] as const;
 
 const formatPrice = (amount: number) => `Rs. ${currencyFormatter.format(amount)}`;
 
@@ -91,6 +114,20 @@ const isAbortError = (error: unknown) => error instanceof DOMException && error.
 
 const hasRazorpayPaymentDetails = (response: RazorpaySuccessResponse) =>
   Boolean(response.razorpay_payment_id && response.razorpay_order_id && response.razorpay_signature);
+
+const isNaturalNumber = (value: string) => /^[1-9]\d*$/.test(value.trim());
+
+const getDeliveryAddress = (hostel: string, room: string) => `${hostel}, Room ${room.trim()}`;
+
+const getDeliveryParts = (address?: string) => {
+  const normalizedAddress = address?.trim() ?? "";
+  const normalizedLower = normalizedAddress.toLowerCase();
+  const hostel =
+    IITM_HOSTELS.find((hostelName) => normalizedLower.startsWith(hostelName.toLowerCase())) ?? "";
+  const room = normalizedAddress.match(/\b(?:room\s*)?([1-9]\d*)\b/i)?.[1] ?? "";
+
+  return { hostel, room };
+};
 
 export default function Checkout() {
   const [loading, setLoading] = useState(false);
@@ -110,21 +147,46 @@ export default function Checkout() {
     JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null
   );
 
+  const savedDeliveryParts = getDeliveryParts(user?.hostel);
+
   // Inline edit state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editHostel, setEditHostel] = useState(user?.hostel || "");
+  const [isEditing, setIsEditing] = useState(
+    !savedDeliveryParts.hostel || !savedDeliveryParts.room || !user?.phone
+  );
+  const [editHostel, setEditHostel] = useState(savedDeliveryParts.hostel);
+  const [editRoom, setEditRoom] = useState(savedDeliveryParts.room);
   const [editPhone, setEditPhone] = useState(user?.phone || "");
   const [savingDetails, setSavingDetails] = useState(false);
 
-  const saveDeliveryDetails = async () => {
-    if (!editHostel.trim() || !editPhone.trim()) {
-      toast.error("Hostel and phone are required");
-      return;
+  const validateDeliveryDetails = () => {
+    if (!editHostel) {
+      toast.error("Select your hostel");
+      return false;
     }
+
+    if (!isNaturalNumber(editRoom)) {
+      toast.error("Enter a valid room number");
+      return false;
+    }
+
+    if (!editPhone.trim()) {
+      toast.error("Phone number is required");
+      return false;
+    }
+
+    return true;
+  };
+
+  const persistDeliveryDetails = async (showSuccessToast = true) => {
+    if (!validateDeliveryDetails()) return false;
+
     if (!user?.id) {
       toast.error("User not found");
-      return;
+      return false;
     }
+
+    const address = getDeliveryAddress(editHostel, editRoom);
+
     setSavingDetails(true);
     try {
       const res = await authFetchWithTimeout(
@@ -133,7 +195,7 @@ export default function Checkout() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            hostel: editHostel.trim(),
+            hostel: address,
             phone: editPhone.trim(),
             profilePic: user.profilePic,
           }),
@@ -143,19 +205,30 @@ export default function Checkout() {
       if (!res.ok) throw new Error("Failed to save details");
       const updated = await res.json();
       const updatedUser = {
+        ...user,
         ...updated,
-        profilePic: user.profilePic,
-        roll: updated.roll?.toLowerCase?.() ?? updated.roll,
+        hostel: updated.hostel || address,
+        phone: updated.phone || editPhone.trim(),
+        profilePic: user.profilePic || updated.profilePic || "",
+        roll: updated.roll?.toLowerCase?.() ?? updated.roll ?? user.roll,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
       setIsEditing(false);
-      toast.success("Delivery details updated!");
+      if (showSuccessToast) {
+        toast.success("Delivery details updated!");
+      }
+      return true;
     } catch {
       toast.error("Failed to save details. Try again.");
+      return false;
     } finally {
       setSavingDetails(false);
     }
+  };
+
+  const saveDeliveryDetails = () => {
+    void persistDeliveryDetails(true);
   };
 
   const itemCount = useMemo(
@@ -166,12 +239,40 @@ export default function Checkout() {
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
   );
-  const total = Number(state?.total ?? subtotal);
-  const profileComplete = Boolean(user?.hostel && user?.phone);
+  const total = subtotal;
+  const deliveryAddress =
+    editHostel && isNaturalNumber(editRoom) ? getDeliveryAddress(editHostel, editRoom) : "";
+  const profileComplete = Boolean(deliveryAddress && editPhone.trim());
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
+  const increaseItem = (id: number) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    );
+  };
+
+  const decreaseItem = (id: number) => {
+    setCart((prev) =>
+      prev
+        .map((item) =>
+          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const removeItem = (id: number) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const authFetchWithTimeout = async (
     path: string,
@@ -291,12 +392,6 @@ export default function Checkout() {
     const storedUser = JSON.parse(localStorage.getItem("user") || "null");
     const token = localStorage.getItem("token");
 
-    if (!storedUser?.hostel || !storedUser?.phone) {
-      toast.error("Complete your profile first");
-      navigate("/profile");
-      return;
-    }
-
     if (!storedUser || !token) {
       toast.error("Login required");
       return;
@@ -386,7 +481,26 @@ export default function Checkout() {
   };
 
   const placeOrder = async () => {
-    if (loading) return;
+    if (loading || savingDetails) return;
+
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null") as StoredUser | null;
+    const token = localStorage.getItem("token");
+
+    if (!storedUser || !token) {
+      toast.error("Login required");
+      return;
+    }
+
+    if (isJwtExpired(token)) {
+      clearUserAuth();
+      return;
+    }
+
+    if (isEditing || !profileComplete) {
+      const saved = await persistDeliveryDetails(false);
+      if (!saved) return;
+    }
+
     if (paymentMethod === "UPI") {
       await handleRazorpay();
       return;
@@ -534,7 +648,9 @@ export default function Checkout() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditHostel(user?.hostel || "");
+                      const currentDelivery = getDeliveryParts(user?.hostel);
+                      setEditHostel(currentDelivery.hostel);
+                      setEditRoom(currentDelivery.room);
                       setEditPhone(user?.phone || "");
                       setIsEditing(true);
                     }}
@@ -559,22 +675,42 @@ export default function Checkout() {
                   </p>
                   <p className="mt-0.5 text-sm text-gray-500">
                     {profileComplete
-                      ? "Hostel and phone confirmed."
-                      : "Add hostel and phone to continue."}
+                      ? "Hostel, room, and phone confirmed."
+                      : "Add hostel, room, and phone to continue."}
                   </p>
                 </div>
 
                 {isEditing ? (
                   <>
-                    <div className="rounded-xl border border-orange-500/30 bg-black/30 p-4 md:col-span-2">
+                    <div className="rounded-xl border border-orange-500/30 bg-black/30 p-4">
                       <label className="text-[10px] uppercase tracking-[0.22em] text-gray-600">
-                        Hostel & Room
+                        Hostel
+                      </label>
+                      <select
+                        value={editHostel}
+                        onChange={(e) => setEditHostel(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-orange-500/50"
+                      >
+                        <option value="">Select hostel</option>
+                        {IITM_HOSTELS.map((hostelName) => (
+                          <option key={hostelName} value={hostelName}>
+                            {hostelName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="rounded-xl border border-orange-500/30 bg-black/30 p-4">
+                      <label className="text-[10px] uppercase tracking-[0.22em] text-gray-600">
+                        Room Number
                       </label>
                       <input
                         type="text"
-                        value={editHostel}
-                        onChange={(e) => setEditHostel(e.target.value)}
-                        placeholder="e.g. Alakananda, Room 204"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={editRoom}
+                        onChange={(e) => setEditRoom(e.target.value.replace(/\D/g, ""))}
+                        placeholder="e.g. 204"
                         className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-orange-500/50"
                       />
                     </div>
@@ -615,7 +751,7 @@ export default function Checkout() {
                     <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 md:col-span-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-gray-600">Hostel & Room</p>
                       <p className="mt-2 text-base font-medium text-white">
-                        {user?.hostel || "No hostel details saved yet"}
+                        {deliveryAddress || user?.hostel || "No hostel details saved yet"}
                       </p>
                     </div>
 
@@ -722,13 +858,25 @@ export default function Checkout() {
           <aside className="space-y-6 xl:sticky xl:top-8 xl:self-start">
             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
               <div className="border-b border-white/[0.06] px-6 py-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
-                  Order Summary
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-white">Your wall haul</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {itemCount} item{itemCount > 1 ? "s" : ""} ready for checkout.
-                </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">
+                      Order Summary
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-white">Your wall haul</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {itemCount} item{itemCount > 1 ? "s" : ""} ready for checkout.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/", { state: { cart, openCart: false } })}
+                    className="shrink-0 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-gray-400 transition hover:border-orange-400/40 hover:text-white"
+                  >
+                    Add Posters
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-3 px-6 py-5">
@@ -753,6 +901,37 @@ export default function Checkout() {
                       <p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
                         {item.cat || "Poster"}
                       </p>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center rounded-full border border-white/10 bg-black/30 p-1">
+                          <button
+                            type="button"
+                            onClick={() => decreaseItem(item.id)}
+                            aria-label={`Decrease quantity of ${item.name}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-white/10 hover:text-white"
+                          >
+                            -
+                          </button>
+                          <span className="min-w-7 text-center text-sm font-semibold text-white">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => increaseItem(item.id)}
+                            aria-label={`Increase quantity of ${item.name}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-white/10 hover:text-white"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id)}
+                          className="rounded-full border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:border-red-300/40 hover:bg-red-500/10"
+                        >
+                          Remove
+                        </button>
+                      </div>
                       <div className="mt-3 flex items-end justify-between">
                         <p className="text-xs text-gray-600">{formatPrice(item.price)} each</p>
                         <p className="text-sm font-bold text-orange-300">
@@ -788,7 +967,7 @@ export default function Checkout() {
 
                 <button
                   type="button"
-                  disabled={loading}
+                  disabled={loading || savingDetails}
                   onClick={placeOrder}
                   className="mt-5 group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-orange-600 px-6 py-4 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                 >
@@ -798,11 +977,13 @@ export default function Checkout() {
                       ? paymentMethod === "UPI"
                         ? "Processing payment..."
                         : "Placing Order..."
+                      : savingDetails
+                      ? "Saving details..."
                       : paymentMethod === "UPI"
                       ? "Pay with Razorpay"
                       : "Confirm Order"}
                   </span>
-                  {!loading && <span className="relative z-10">→</span>}
+                  {!loading && !savingDetails && <span className="relative z-10">→</span>}
                 </button>
 
                 <p className="mt-3 text-center text-xs text-gray-600">

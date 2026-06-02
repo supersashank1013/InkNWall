@@ -47,11 +47,11 @@ export default function AnnouncementBar() {
         }
       `}</style>
 
-      <section className="relative z-20 px-3 py-2 sm:px-6 lg:px-8">
+      <section className="relative z-20 px-3 py-1 sm:px-6 sm:py-2 lg:px-8">
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[20px] border border-orange-400/20 bg-[linear-gradient(90deg,rgba(43,18,8,0.92)_0%,rgba(83,34,11,0.96)_48%,rgba(18,18,18,0.92)_100%)] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:rounded-[24px]">
           <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:140px_140px]" />
 
-          <div className="relative flex flex-col gap-2 px-3 py-2.5 sm:px-5 sm:py-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="relative flex flex-col gap-1.5 px-3 py-2 sm:px-5 sm:py-3 lg:flex-row lg:items-center lg:gap-4">
             <div className="flex items-center gap-3">
               <div className="hidden text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-100/70 sm:block">
                 Fresh wall drop

@@ -231,7 +231,7 @@ function HomePage() {
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-clip bg-[#050505] pt-36 font-sans text-gray-100 antialiased selection:bg-orange-600 selection:text-white sm:pt-40 md:pt-16">
+    <div className="relative flex min-h-screen flex-col overflow-clip bg-[#050505] pt-28 font-sans text-gray-100 antialiased selection:bg-orange-600 selection:text-white sm:pt-32 md:pt-16">
       <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.035] [background-image:linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:72px_72px]" />
       <div className="pointer-events-none fixed inset-x-0 top-[-14rem] z-0 h-[34rem] bg-[radial-gradient(circle_at_top,rgba(255,95,31,0.2),transparent_60%)]" />
       <div className="pointer-events-none fixed -left-24 top-1/3 z-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
@@ -250,7 +250,7 @@ function HomePage() {
         <AnnouncementBar />
       </div>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-grow flex-col gap-5 px-3 py-4 sm:px-6 sm:py-6 lg:gap-8 lg:px-8 lg:py-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-grow flex-col gap-5 px-3 py-2 sm:px-6 sm:py-4 lg:gap-8 lg:px-8 lg:py-8">
         <Hero onFeaturedPosterSelect={focusPosterCard} />
         <CategoryBar
           categoryOptions={categoryOptions}

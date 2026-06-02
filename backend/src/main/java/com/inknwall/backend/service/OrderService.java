@@ -72,7 +72,7 @@ public class OrderService {
                 System.out.println("EMAIL PROCESS STARTED");
                 EmailService.EmailResult result = emailService.sendEmailNow(
                         user.getEmail(),
-                        "Your InkNWall Order is Confirmed!",
+                        buildOrderConfirmationSubject(savedOrder),
                         html
                 );
                 System.out.println("MAIL RESULT: " + result.sent() + " | " + result.message());
@@ -86,6 +86,10 @@ public class OrderService {
         }
 
         return savedOrder;
+    }
+
+    private String buildOrderConfirmationSubject(Order order) {
+        return "Order #" + order.getId() + " Confirmed | InkNWall";
     }
 
     public Order updateStatus(Long id, Order.Status status) {
