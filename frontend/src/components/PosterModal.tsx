@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ProtectedPosterImage from "./ProtectedPosterImage";
 
 export default function PosterModal({
   img,
@@ -56,7 +57,7 @@ export default function PosterModal({
 
         <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0b0b0b]/90 shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
           <div className="aspect-[3/4] w-full max-h-[90vh] bg-black/90 sm:aspect-[4/5] md:aspect-[3/4] lg:aspect-[11/14]">
-            <img
+            <ProtectedPosterImage
               src={img}
               alt="Enlarged Poster view"
               className="h-full w-full object-contain"

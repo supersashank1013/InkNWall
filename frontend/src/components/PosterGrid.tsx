@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import type { CSSProperties } from "react";
 import type { Poster } from "../data/posters";
 import type { CartItem } from "../App";
+import ProtectedPosterImage from "./ProtectedPosterImage";
 
 interface Props {
   shopRef?: React.RefObject<HTMLElement | null>;
@@ -292,7 +293,7 @@ export default function PosterGrid({
                     {p.cat}
                   </div>
 
-                  <img
+                  <ProtectedPosterImage
                     src={p.img}
                     alt={p.name}
                     className="h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:brightness-110"

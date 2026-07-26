@@ -62,6 +62,14 @@ body {
   font-family: Inter, sans-serif;
 }
 
+.protected-poster-image {
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @keyframes profile-fluid-morph-in {
   0% {
     opacity: 0;

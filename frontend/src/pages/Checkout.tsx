@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
+import ProtectedPosterImage from "../components/ProtectedPosterImage";
 
 interface CheckoutItem {
   id: number;
@@ -885,7 +886,7 @@ export default function Checkout() {
                     key={item.id}
                     className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-black/20 p-3"
                   >
-                    <img
+                    <ProtectedPosterImage
                       src={item.img}
                       alt={item.name}
                       className="h-20 w-14 rounded-lg object-cover"

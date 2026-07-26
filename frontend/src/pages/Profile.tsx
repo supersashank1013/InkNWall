@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { authFetch, isJwtExpired, clearUserAuth } from "../lib/api";
+import ProtectedPosterImage from "../components/ProtectedPosterImage";
 
 type OrderStatus = "PENDING" | "RECEIVED" | "COLLECTED";
 type OrderFilter = "PLACED" | "COLLECTED";
@@ -600,7 +601,7 @@ export default function Profile() {
                               onClick={() => posterId && navigate(`/?poster=${posterId}`)}
                               className="flex w-full items-center gap-3 rounded-xl border border-transparent bg-white/[0.02] p-2 text-left transition hover:border-white/10 hover:bg-white/5"
                             >
-                              <img
+                              <ProtectedPosterImage
                                 src={posterImage}
                                 alt={posterName}
                                 className="h-16 w-12 rounded object-cover"

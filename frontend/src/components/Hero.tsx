@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiUrl } from "../lib/api";
+import ProtectedPosterImage from "./ProtectedPosterImage";
 
 
 
@@ -229,7 +230,7 @@ export default function Hero({ onFeaturedPosterSelect }: HeroProps) {
                         i === activeIndex ? "z-10 scale-100 opacity-100 pointer-events-auto" : "z-0 scale-110 opacity-0 pointer-events-none"
                       }`}
                     >
-                      <img
+                      <ProtectedPosterImage
                         src={poster.imageUrl}
                         alt={poster.name?.trim() || "Featured Drop"}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

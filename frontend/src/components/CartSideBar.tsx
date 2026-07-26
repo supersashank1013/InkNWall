@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CartItem } from "../App";
 import AuthModal from "./AuthModal";
+import ProtectedPosterImage from "./ProtectedPosterImage";
 
 interface Props {
   cart: CartItem[];
@@ -239,7 +240,7 @@ export default function CartSidebar({
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
 
                 <div className="relative flex items-center gap-3 sm:gap-4">
-                  <img
+                  <ProtectedPosterImage
                     src={item.img}
                     alt={item.name}
                     className="h-16 w-14 rounded-xl border border-white/12 object-cover shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition-transform duration-300 group-hover:scale-105"
