@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+//import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -183,10 +183,6 @@ public class OrderService {
         );
     }
     public List<Order> getRecentOrders() {
-        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
-
-        return repo.findAll().stream()
-                .filter(order -> order.getCreatedAt().isAfter(sevenDaysAgo))
-                .toList();
+        return repo.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }
