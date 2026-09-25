@@ -233,7 +233,7 @@ export default function Admin() {
 
   const fetchOrders = () => {
     setOrdersLoading(true);
-    authFetch("/api/orders/recent", {}, "admin")
+    authFetch("/api/orders", {}, "admin")
       .then((res) => res.json())
       .then((data) => {
         const normalizedData = Array.isArray(data)
